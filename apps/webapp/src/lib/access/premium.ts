@@ -6,27 +6,25 @@ export async function userHasPremiumAccess(userId: string) {
   const { data: userData } = await supabase.auth.getUser();
   const email = userData.user?.email ? normalizeEmail(userData.user.email) : undefined;
 
-  const byUserId = await supabase
-    .from("access_grants")
-    .select("status,user_id")
-    .eq("user_id", userId)
-    .eq("status", "active")
-    .maybeSingle();
-
-  if (byUserId.data?.status === "active") {
-    return true;
-  }
-
   if (!email) {
     return false;
   }
 
-  const byEmail = await supabase
+  const { data: grants, error } = await supabase
     .from("access_grants")
-    .select("status,user_id")
-    .eq("email", email)
-    .eq("status", "active")
-    .maybeSingle();
+    .select("email,status,user_id")
+    .ilike("email", email)
+    .limit(5);
 
-  return byEmail.data?.status === "active" && (!byEmail.data.user_id || byEmail.data.user_id === userId);
+  if (error || !grants?.length) {
+    return false;
+  }
+
+  return grants.some((grant) => {
+    const grantEmail = normalizeEmail(String(grant.email || ""));
+    const grantStatus = String(grant.status || "").trim().toLowerCase();
+    const grantUserId = grant.user_id ? String(grant.user_id).trim() : null;
+
+    return grantEmail === email && grantStatus === "active" && (!grantUserId || grantUserId === userId);
+  });
 }

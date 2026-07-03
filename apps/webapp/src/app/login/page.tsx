@@ -19,7 +19,7 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
   } = await supabase.auth.getUser();
 
   if (user) {
-    redirect("/app");
+    redirect("/dashboard");
   }
 
   const initialMessage = await getInitialMessage(searchParams);

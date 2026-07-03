@@ -102,7 +102,7 @@ export function LoginForm({ initialMessage }: LoginFormProps) {
       return;
     }
 
-    const redirectTo = result.redirectTo || "/app";
+    const redirectTo = result.redirectTo || "/dashboard";
     console.log("Login redirect final", {
       userId: data.user.id,
       email: userEmail,

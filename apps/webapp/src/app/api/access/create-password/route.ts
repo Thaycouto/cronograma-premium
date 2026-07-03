@@ -121,5 +121,5 @@ export async function POST(request: Request) {
     return redirectTo(request, "/login?senha=criada");
   }
 
-  return redirectTo(request, "/app");
+  return redirectTo(request, "/dashboard");
 }

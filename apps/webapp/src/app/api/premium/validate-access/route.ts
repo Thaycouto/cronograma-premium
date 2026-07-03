@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+const DASHBOARD_PATH = "/dashboard";
 
 type DebugDetails = Record<string, string | number | boolean | null | undefined>;
 
@@ -14,6 +15,13 @@ function jsonError(message: string, status: number, code: string, details?: Debu
 
 function getSupabaseGrantErrorMessage(code?: string, message?: string) {
   const normalizedMessage = (message || "").toLowerCase();
+
+  if (code === "QUERY_TIMEOUT") {
+    return {
+      code: "grant_lookup_timeout",
+      message: "A validação premium demorou demais para responder. Tente novamente em instantes.",
+    };
+  }
 
   if (code === "42501" || normalizedMessage.includes("permission denied")) {
     return {
@@ -140,12 +148,27 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data: grant, error: grantError } = await admin
+  const grantQuery = admin
     .from("access_grants")
     .select("id,email,status,user_id")
     .ilike("email", email)
-    .eq("status", "active")
-    .maybeSingle();
+    .limit(5);
+
+  const timeout = new Promise<{
+    data: null;
+    error: { code: string; message: string };
+  }>((resolve) => {
+    setTimeout(
+      () =>
+        resolve({
+          data: null,
+          error: { code: "QUERY_TIMEOUT", message: "access_grants lookup timed out" },
+        }),
+      10000,
+    );
+  });
+
+  const { data: grants, error: grantError } = await Promise.race([grantQuery, timeout]);
 
   if (grantError) {
     const mappedError = getSupabaseGrantErrorMessage(grantError.code, grantError.message);
@@ -164,13 +187,25 @@ export async function POST(request: Request) {
     });
   }
 
+  const normalizedGrants = (grants || []).map((grant) => ({
+    ...grant,
+    normalizedEmail: normalizeEmail(String(grant.email || "")),
+    normalizedStatus: String(grant.status || "").trim().toLowerCase(),
+    normalizedUserId: grant.user_id ? String(grant.user_id).trim() : null,
+  }));
+
+  const grant = normalizedGrants.find(
+    (item) => item.normalizedEmail === email && item.normalizedStatus === "active",
+  );
+
   console.log("validate-access access_grants encontrado", {
     userId: user.id,
     email,
+    rawCount: grants?.length || 0,
     found: Boolean(grant),
     grantId: grant?.id || null,
-    currentUserId: grant?.user_id || null,
-    currentStatus: grant?.status || null,
+    userIdEncontrado: grant?.normalizedUserId || null,
+    statusEncontrado: grant?.normalizedStatus || null,
   });
 
   if (!grant) {
@@ -185,21 +220,21 @@ export async function POST(request: Request) {
     });
   }
 
-  if (grant.user_id && grant.user_id !== user.id) {
+  if (grant.normalizedUserId && grant.normalizedUserId !== user.id) {
     console.log("validate-access resultado", {
       result: "blocked_linked_to_another_user",
-      currentUserId: grant.user_id,
+      currentUserId: grant.normalizedUserId,
       receivedUserId: user.id,
       redirectFinal: null,
     });
     await supabase.auth.signOut();
     return jsonError("Este acesso já está vinculado a outra conta.", 403, "linked_to_another_user", {
-      currentUserId: grant.user_id,
+      currentUserId: grant.normalizedUserId,
       receivedUserId: user.id,
     });
   }
 
-  if (!grant.user_id) {
+  if (!grant.normalizedUserId) {
     const { error: updateError } = await admin
       .from("access_grants")
       .update({
@@ -236,10 +271,10 @@ export async function POST(request: Request) {
     result: "allowed",
     userId: user.id,
     email,
-    currentUserId: grant.user_id || user.id,
-    currentStatus: grant.status,
-    redirectFinal: "/app",
+    currentUserId: grant.normalizedUserId || user.id,
+    currentStatus: grant.normalizedStatus,
+    redirectFinal: DASHBOARD_PATH,
   });
 
-  return NextResponse.json({ ok: true, redirectTo: "/app" });
+  return NextResponse.json({ ok: true, redirectTo: DASHBOARD_PATH });
 }
