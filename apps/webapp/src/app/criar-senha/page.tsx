@@ -3,7 +3,8 @@ import { createPassword } from "@/app/criar-senha/create-password-action";
 
 const errorMessages: Record<string, string> = {
   dados: "Informe um e-mail válido e uma senha com pelo menos 8 caracteres.",
-  "sem-acesso": "Esse e-mail ainda não tem uma compra aprovada.",
+  "sem-acesso": "Esse e-mail ainda não aparece como acesso aprovado.",
+  config: "O acesso existe, mas a conexão premium ainda precisa ser ajustada.",
   conta: "Não foi possível criar a senha agora.",
 };
 

@@ -12,15 +12,30 @@ export async function createPassword(formData: FormData) {
     redirect("/criar-senha?erro=dados");
   }
 
-  const supabase = createSupabaseAdminClient();
+  let supabase: ReturnType<typeof createSupabaseAdminClient>;
+  try {
+    supabase = createSupabaseAdminClient();
+  } catch (error) {
+    console.error("Create password Supabase admin config error:", error);
+    redirect("/criar-senha?erro=config");
+  }
+
   const { data: grant, error: grantError } = await supabase
     .from("access_grants")
-    .select("id,status,user_id")
-    .eq("email", email)
+    .select("id,status,user_id,email")
+    .ilike("email", email)
     .eq("status", "active")
     .maybeSingle();
 
-  if (grantError || !grant) {
+  if (grantError) {
+    console.error("Create password access grant lookup failed:", {
+      code: grantError.code,
+      message: grantError.message,
+    });
+    redirect("/criar-senha?erro=config");
+  }
+
+  if (!grant) {
     redirect("/criar-senha?erro=sem-acesso");
   }
 
@@ -39,16 +54,28 @@ export async function createPassword(formData: FormData) {
   });
 
   if (error || !data.user) {
+    console.error("Create password Supabase auth user creation failed:", {
+      message: error?.message,
+      status: error?.status,
+    });
     redirect("/criar-senha?erro=conta");
   }
 
-  await supabase
+  const { error: updateError } = await supabase
     .from("access_grants")
     .update({
       user_id: data.user.id,
       updated_at: new Date().toISOString(),
     })
     .eq("id", grant.id);
+
+  if (updateError) {
+    console.error("Create password access grant update failed:", {
+      code: updateError.code,
+      message: updateError.message,
+    });
+    redirect("/criar-senha?erro=config");
+  }
 
   redirect("/login?senha=criada");
 }
