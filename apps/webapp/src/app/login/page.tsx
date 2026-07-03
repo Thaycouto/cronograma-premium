@@ -42,6 +42,9 @@ export default async function LoginPage() {
         <button className="cta-gradient mt-7 w-full rounded-full px-6 py-4 text-sm font-extrabold text-white" type="submit">
           Entrar
         </button>
+        <a className="mt-5 inline-flex text-sm font-extrabold text-[#ad2d63]" href="/criar-senha">
+          Criar senha com o e-mail da compra
+        </a>
       </form>
     </main>
   );

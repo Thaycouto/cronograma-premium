@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+const landingUrl = process.env.NEXT_PUBLIC_LANDING_URL || "https://couto-hair-program.netlify.app";
+
 export default function NoAccessPage() {
   return (
     <main className="grid min-h-svh place-items-center px-5 py-16">
@@ -11,9 +13,14 @@ export default function NoAccessPage() {
         <p className="mt-6 text-base font-semibold leading-7 text-[#5b4d52]">
           Quando a compra for confirmada, o cronograma completo fica disponível nesta área.
         </p>
-        <Link className="cta-gradient mt-8 inline-flex rounded-full px-7 py-4 text-sm font-extrabold text-white" href="/">
-          Voltar para a página principal
-        </Link>
+        <div className="mt-8 grid gap-3">
+          <Link className="cta-gradient inline-flex justify-center rounded-full px-7 py-4 text-sm font-extrabold text-white" href="/criar-senha">
+            Criar senha com outro e-mail
+          </Link>
+          <a className="inline-flex justify-center rounded-full bg-[#140b10] px-7 py-4 text-sm font-extrabold text-white" href={landingUrl}>
+            Voltar para a página de venda
+          </a>
+        </div>
       </section>
     </main>
   );

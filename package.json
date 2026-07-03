@@ -2,24 +2,20 @@
   "name": "cronograma-premium",
   "private": true,
   "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "next dev -H 127.0.0.1",
-    "build": "next build",
-    "start": "next start"
-  },
-  "dependencies": {
-    "@supabase/ssr": "^0.7.0",
-    "@supabase/supabase-js": "^2.86.0",
-    "next": "^16.1.0",
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3"
+    "dev:landing": "npm --workspace apps/landing run dev",
+    "dev:webapp": "npm --workspace apps/webapp run dev",
+    "build": "npm --workspaces --if-present run build",
+    "build:landing": "npm --workspace apps/landing run build",
+    "build:webapp": "npm --workspace apps/webapp run build",
+    "start:landing": "npm --workspace apps/landing run start",
+    "start:webapp": "npm --workspace apps/webapp run start"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.18",
-    "@types/node": "^24.10.1",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
-    "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3"
   }
 }

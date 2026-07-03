@@ -1,18 +1,19 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { normalizeEmail } from "@/lib/format/email";
 
 export async function userHasPremiumAccess(userId: string) {
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
-  const email = userData.user?.email;
+  const email = userData.user?.email ? normalizeEmail(userData.user.email) : undefined;
 
   const byUserId = await supabase
-    .from("premium_access")
-    .select("active")
+    .from("access_grants")
+    .select("status")
     .eq("user_id", userId)
-    .eq("active", true)
+    .eq("status", "active")
     .maybeSingle();
 
-  if (byUserId.data?.active) {
+  if (byUserId.data?.status === "active") {
     return true;
   }
 
@@ -21,11 +22,11 @@ export async function userHasPremiumAccess(userId: string) {
   }
 
   const byEmail = await supabase
-    .from("premium_access")
-    .select("active")
+    .from("access_grants")
+    .select("status")
     .eq("email", email)
-    .eq("active", true)
+    .eq("status", "active")
     .maybeSingle();
 
-  return Boolean(byEmail.data?.active);
+  return byEmail.data?.status === "active";
 }

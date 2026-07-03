@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+:root {
+  --shell: #fff8f2;
+  --cream: #f3e7de;
+  --ink: #140b10;
+  --wine: #3e1224;
+  --rose: #e14a86;
+  --rose-deep: #ad2d63;
+  --blush: #f6d4de;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--shell);
+  color: var(--ink);
+  font-family: var(--font-manrope), Arial, sans-serif;
+}
+
+::selection {
+  background: var(--rose);
+  color: #fff;
+}
+
+.font-editorial {
+  font-family: var(--font-fraunces), Georgia, serif;
+}
+
+.premium-shadow {
+  box-shadow: 0 30px 90px rgba(62, 18, 36, 0.14);
+}
+
+.soft-border {
+  border: 1px solid rgba(20, 11, 16, 0.11);
+}
+
+.cta-gradient {
+  background: linear-gradient(135deg, var(--rose), var(--rose-deep) 45%, var(--wine));
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}

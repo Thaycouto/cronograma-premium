@@ -1,5 +1,6 @@
 node_modules
 .next
+.netlify
 out
 dist
 build
@@ -12,3 +13,8 @@ build
 .env.development.local
 .env.test.local
 .env.production.local
+**/.env
+**/.env.local
+**/.env.development.local
+**/.env.test.local
+**/.env.production.local

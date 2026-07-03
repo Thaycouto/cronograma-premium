@@ -1,3 +1,6 @@
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://couto-hair-app.netlify.app";
+const kiwifyCheckoutUrl = process.env.NEXT_PUBLIC_KIWIFY_CHECKOUT_URL || "#acesso";
+
 const references = [
   {
     before: "/assets/fotos referencia cronograma/antes.cronograma.jpeg",
@@ -11,11 +14,9 @@ const references = [
 
 const steps = [
   "Responda o diagnóstico",
-  "Receba a prévia do cronograma",
-  "Libere o acesso premium",
+  "Receba uma rotina organizada",
+  "Acesse o webapp após a compra",
 ];
-
-const kiwifyCheckoutUrl = process.env.NEXT_PUBLIC_KIWIFY_CHECKOUT_URL || "#acesso";
 
 export default function LandingPage() {
   return (
@@ -24,11 +25,8 @@ export default function LandingPage() {
         <a className="text-sm font-extrabold tracking-[-0.02em]" href="#">
           Couto Hair Program
         </a>
-        <a
-          className="cta-gradient rounded-full px-5 py-3 text-xs font-extrabold text-white shadow-[0_16px_40px_rgba(173,45,99,0.24)] transition hover:-translate-y-0.5"
-          href={kiwifyCheckoutUrl}
-        >
-          Comprar acesso
+        <a className="rounded-full bg-[#140b10] px-5 py-3 text-xs font-extrabold text-white transition hover:-translate-y-0.5" href={appUrl}>
+          Já comprei
         </a>
       </header>
 
@@ -46,19 +44,16 @@ export default function LandingPage() {
                 Você vai ter tudo isso e muito mais nesse cronograma capilar montado excepcionalmente pra você, pela pessoa que teve esse resultado abaixo.
               </p>
             </div>
-            <a
-              className="cta-gradient mt-9 inline-flex rounded-full px-7 py-4 text-sm font-extrabold text-white shadow-[0_24px_70px_rgba(173,45,99,0.30)] transition hover:-translate-y-1"
-              href={kiwifyCheckoutUrl}
-            >
+            <a className="cta-gradient mt-9 inline-flex rounded-full px-7 py-4 text-sm font-extrabold text-white shadow-[0_24px_70px_rgba(173,45,99,0.30)] transition hover:-translate-y-1" href={kiwifyCheckoutUrl}>
               Montar meu cronograma
             </a>
           </div>
 
           <div className="premium-shadow rounded-[36px] bg-[#fffaf6] p-3 md:p-4">
             <div className="rounded-[28px] bg-[linear-gradient(145deg,#3e1224,#140b10)] p-5 text-white">
-              <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-[#f6d4de]">Prévia premium</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-[#f6d4de]">Couto Hair Program</p>
               <div className="mt-10 rounded-[26px] bg-[#fff8f2] p-5 text-[#140b10]">
-                <span className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#ad2d63]">Etapa atual</span>
+                <span className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#ad2d63]">Prévia do webapp</span>
                 <h2 className="font-editorial mt-2 text-4xl font-black leading-none">Nutrição</h2>
                 <p className="mt-4 text-sm font-semibold leading-6 text-[#5d5055]">
                   Hoje o cuidado foca em devolver maciez e equilíbrio ao comprimento.
@@ -87,10 +82,7 @@ export default function LandingPage() {
 
           <div className="mt-12 grid gap-8">
             {references.map((item, index) => (
-              <article
-                className={`grid gap-4 ${index === 0 ? "md:mx-auto md:max-w-5xl md:grid-cols-[0.95fr_1.1fr]" : "md:ml-auto md:max-w-3xl md:grid-cols-2"}`}
-                key={item.before}
-              >
+              <article className={`grid gap-4 ${index === 0 ? "md:mx-auto md:max-w-5xl md:grid-cols-[0.95fr_1.1fr]" : "md:ml-auto md:max-w-3xl md:grid-cols-2"}`} key={item.before}>
                 <ReferenceImage label="Antes" src={item.before} featured={index === 0} />
                 <ReferenceImage label="Depois" src={item.after} featured={index === 0} />
               </article>
@@ -106,10 +98,10 @@ export default function LandingPage() {
           </h2>
           <div className="space-y-5 text-lg font-semibold leading-8 text-[#f4dbe4]">
             <p>
-              A pessoa responde o diagnóstico, recebe uma prévia da rotina e libera o calendário completo dentro da área premium.
+              Primeiro você responde o diagnóstico. Depois, o webapp organiza a rotina em hidratação, nutrição e reconstrução.
             </p>
             <p>
-              Cada etapa mostra o foco do tratamento, como fazer, o que observar e o que evitar.
+              O acesso completo fica no app privado, liberado após a confirmação da compra.
             </p>
           </div>
         </div>
@@ -117,15 +109,11 @@ export default function LandingPage() {
 
       <section className="px-5 py-20 md:px-10">
         <div className="mx-auto max-w-6xl">
-          <h2 className="font-editorial text-5xl font-black leading-[0.95] tracking-[-0.035em] md:text-7xl">
-            Como funciona
-          </h2>
+          <h2 className="font-editorial text-5xl font-black leading-[0.95] tracking-[-0.035em] md:text-7xl">Como funciona</h2>
           <div className="mt-10 divide-y divide-[#140b10]/15 border-y border-[#140b10]/15">
             {steps.map((step, index) => (
               <div className="grid gap-4 py-7 md:grid-cols-[120px_1fr] md:items-center" key={step}>
-                <span className="text-xs font-black uppercase tracking-[0.22em] text-[#ad2d63]">
-                  0{index + 1}
-                </span>
+                <span className="text-xs font-black uppercase tracking-[0.22em] text-[#ad2d63]">0{index + 1}</span>
                 <p className="font-editorial text-3xl font-black leading-none md:text-5xl">{step}</p>
               </div>
             ))}
@@ -140,17 +128,17 @@ export default function LandingPage() {
               Acesso premium ao seu cronograma.
             </h2>
             <p className="mt-6 max-w-xl text-lg font-semibold leading-8 text-[#5b4d52]">
-              Depois da compra, o acesso será liberado para entrar na área do cronograma com email e senha.
+              A compra libera o caminho para entrar no app e criar sua senha com o mesmo e-mail usado na Kiwify.
             </p>
           </div>
           <div className="rounded-[28px] bg-[#140b10] p-6 text-white">
             <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-[#f6d4de]">Couto Hair Program</p>
             <p className="font-editorial mt-8 text-6xl font-black">R$ 47</p>
-            <a
-              className="mt-8 inline-flex w-full justify-center rounded-full bg-white px-6 py-4 text-sm font-extrabold text-[#140b10] transition hover:-translate-y-1"
-              href={kiwifyCheckoutUrl}
-            >
+            <a className="mt-8 inline-flex w-full justify-center rounded-full bg-white px-6 py-4 text-sm font-extrabold text-[#140b10] transition hover:-translate-y-1" href={kiwifyCheckoutUrl}>
               Comprar pela Kiwify
+            </a>
+            <a className="mt-3 inline-flex w-full justify-center rounded-full border border-white/20 px-6 py-4 text-sm font-extrabold text-white transition hover:bg-white/10" href={appUrl}>
+              Já comprei
             </a>
           </div>
         </div>
