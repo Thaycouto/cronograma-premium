@@ -8,7 +8,7 @@ export async function userHasPremiumAccess(userId: string) {
 
   const byUserId = await supabase
     .from("access_grants")
-    .select("status")
+    .select("status,user_id")
     .eq("user_id", userId)
     .eq("status", "active")
     .maybeSingle();
@@ -23,10 +23,10 @@ export async function userHasPremiumAccess(userId: string) {
 
   const byEmail = await supabase
     .from("access_grants")
-    .select("status")
+    .select("status,user_id")
     .eq("email", email)
     .eq("status", "active")
     .maybeSingle();
 
-  return byEmail.data?.status === "active";
+  return byEmail.data?.status === "active" && (!byEmail.data.user_id || byEmail.data.user_id === userId);
 }

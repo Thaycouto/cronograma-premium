@@ -2,8 +2,8 @@ import Link from "next/link";
 
 const errorMessages: Record<string, string> = {
   dados: "Informe um e-mail válido e uma senha com pelo menos 8 caracteres.",
-  "sem-acesso": "Não encontramos uma compra aprovada para este email.",
-  "conta-existente": "Esse email já tem uma senha criada. Entre para acessar seu cronograma.",
+  "sem-acesso": "Não encontramos uma compra aprovada para este e-mail.",
+  "conta-existente": "Este e-mail já tem senha criada. Faça login para continuar.",
   conta: "Não foi possível criar sua senha agora. Tente novamente em instantes.",
 };
 

@@ -1,8 +1,17 @@
 import { redirect } from "next/navigation";
-import { signIn } from "@/app/login/sign-in-action";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export default async function LoginPage() {
+const errorMessages: Record<string, string> = {
+  dados: "Informe seu e-mail e senha para entrar.",
+  credenciais: "E-mail ou senha incorretos. Confira os dados e tente novamente.",
+  "email-nao-confirmado": "Seu e-mail ainda não foi confirmado.",
+  "sem-acesso": "Não encontramos uma compra aprovada para este e-mail.",
+  vinculado: "Este acesso já está vinculado a outra conta.",
+  validacao: "Não foi possível validar seu acesso agora. Tente novamente em instantes.",
+  login: "Não foi possível entrar agora. Confira os dados e tente novamente.",
+};
+
+export default async function LoginPage({ searchParams }: { searchParams?: Promise<{ erro?: string; senha?: string; conta?: string }> }) {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -14,11 +23,16 @@ export default async function LoginPage() {
 
   return (
     <main className="grid min-h-svh place-items-center px-5 py-16">
-      <form action={signIn} className="premium-shadow w-full max-w-md rounded-[34px] bg-[#fffaf6] p-6 soft-border md:p-8">
+      <form
+        action="/api/access/login"
+        className="premium-shadow w-full max-w-md rounded-[34px] bg-[#fffaf6] p-6 soft-border md:p-8"
+        method="post"
+      >
         <p className="text-xs font-black uppercase tracking-[0.22em] text-[#ad2d63]">Couto Hair Program</p>
         <h1 className="font-editorial mt-5 text-5xl font-black leading-none tracking-[-0.035em]">
           Entrar no cronograma
         </h1>
+        <LoginMessage searchParams={searchParams} />
         <label className="mt-8 block text-sm font-extrabold" htmlFor="email">
           Email
         </label>
@@ -48,4 +62,32 @@ export default async function LoginPage() {
       </form>
     </main>
   );
+}
+
+async function LoginMessage({ searchParams }: { searchParams?: Promise<{ erro?: string; senha?: string; conta?: string }> }) {
+  const params = searchParams ? await searchParams : undefined;
+
+  if (params?.senha === "criada") {
+    return (
+      <p className="mt-5 rounded-2xl bg-[#f6d4de] px-4 py-3 text-sm font-bold text-[#3e1224]">
+        Senha criada. Entre para acessar seu cronograma.
+      </p>
+    );
+  }
+
+  if (params?.conta === "existente") {
+    return (
+      <p className="mt-5 rounded-2xl bg-[#f6d4de] px-4 py-3 text-sm font-bold text-[#3e1224]">
+        Este e-mail já tem senha criada. Faça login para continuar.
+      </p>
+    );
+  }
+
+  const message = params?.erro ? errorMessages[params.erro] : undefined;
+
+  if (!message) {
+    return null;
+  }
+
+  return <p className="mt-5 rounded-2xl bg-[#f6d4de] px-4 py-3 text-sm font-bold text-[#3e1224]">{message}</p>;
 }
