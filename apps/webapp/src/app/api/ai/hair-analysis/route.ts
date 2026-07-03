@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { userHasPremiumAccess } from "@/lib/access/premium";
 
@@ -114,7 +114,7 @@ type OpenAIResponseBody = {
   error?: unknown;
 };
 
-type SupabaseAdminClient = ReturnType<typeof createSupabaseAdminClient>;
+type SupabaseAdminClient = ReturnType<typeof createSupabaseAdmin>;
 
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
@@ -272,7 +272,7 @@ export async function POST(request: Request) {
 
   let admin: SupabaseAdminClient;
   try {
-    admin = createSupabaseAdminClient();
+    admin = createSupabaseAdmin();
   } catch {
     return jsonError("A validação premium ainda não está configurada no servidor.", 500);
   }

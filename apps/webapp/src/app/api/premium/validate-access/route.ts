@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { normalizeEmail } from "@/lib/format/email";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -26,8 +26,7 @@ function getSupabaseGrantErrorMessage(code?: string, message?: string) {
   if (code === "42501" || normalizedMessage.includes("permission denied")) {
     return {
       code: "permission_denied",
-      message:
-        "A validação premium não tem permissão para ler access_grants. Confira se SUPABASE_SERVICE_ROLE_KEY é a service role real no Netlify.",
+      message: "Não foi possível validar seu acesso agora. Tente novamente em instantes.",
     };
   }
 
@@ -50,8 +49,7 @@ function getSupabaseUpdateErrorMessage(code?: string, message?: string) {
   if (code === "42501" || normalizedMessage.includes("permission denied")) {
     return {
       code: "permission_denied",
-      message:
-        "A validação premium não tem permissão para vincular o acesso. Confira se SUPABASE_SERVICE_ROLE_KEY é a service role real no Netlify.",
+      message: "Não foi possível validar seu acesso agora. Tente novamente em instantes.",
     };
   }
 
@@ -117,7 +115,7 @@ export async function POST(request: Request) {
     });
   }
 
-  let admin: ReturnType<typeof createSupabaseAdminClient>;
+  let admin: ReturnType<typeof createSupabaseAdmin>;
   try {
     const hasSupabaseUrl = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL);
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
@@ -130,22 +128,13 @@ export async function POST(request: Request) {
       serviceRoleKeyLooksJwt: serviceRoleKey.split(".").length === 3,
     });
 
-    if (serviceRoleKey.startsWith("sb_publishable_")) {
-      throw new Error("SUPABASE_SERVICE_ROLE_KEY is a publishable key, not a service role/secret key.");
-    }
-
-    admin = createSupabaseAdminClient();
+    admin = createSupabaseAdmin();
   } catch (error) {
     console.error("validate-access admin client config error", error);
     await supabase.auth.signOut();
-    return jsonError(
-      "A chave de validação premium do servidor está ausente ou inválida.",
-      500,
-      "admin_config_error",
-      {
-        message: error instanceof Error ? error.message : "unknown_error",
-      },
-    );
+    return jsonError("Não foi possível validar seu acesso agora. Tente novamente em instantes.", 500, "admin_config_error", {
+      message: error instanceof Error ? error.message : "unknown_error",
+    });
   }
 
   const grantQuery = admin

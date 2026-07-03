@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { normalizeEmail } from "@/lib/format/email";
 
 const APPROVED_STATUS = new Set(["approved", "paid", "completed", "active"]);
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing customer email" }, { status: 400 });
   }
 
-  const supabase = createSupabaseAdminClient();
+  const supabase = createSupabaseAdmin();
   const email = normalizeEmail(event.email);
   const eventId = event.eventId || event.orderId || `${event.eventType || "kiwify"}:${email}:${Date.now()}`;
 

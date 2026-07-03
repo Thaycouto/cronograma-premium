@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { normalizeEmail } from "@/lib/format/email";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -36,9 +36,9 @@ export async function POST(request: Request) {
     return redirectWithError(request, "dados");
   }
 
-  let admin: ReturnType<typeof createSupabaseAdminClient>;
+  let admin: ReturnType<typeof createSupabaseAdmin>;
   try {
-    admin = createSupabaseAdminClient();
+    admin = createSupabaseAdmin();
   } catch (error) {
     console.error("Create password admin client config error:", error);
     return redirectWithError(request, "conta");
