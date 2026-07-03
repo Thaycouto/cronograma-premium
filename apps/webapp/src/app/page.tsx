@@ -1,19 +1,8 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const landingUrl = process.env.NEXT_PUBLIC_LANDING_URL || "https://couto-hair-program.netlify.app";
 
-export default async function WebappHomePage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (user) {
-    redirect("/app");
-  }
-
+export default function WebappHomePage() {
   return (
     <main className="grid min-h-svh place-items-center px-5 py-16">
       <section className="premium-shadow max-w-xl rounded-[34px] bg-[#fffaf6] p-8 text-center soft-border">
