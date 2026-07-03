@@ -70,7 +70,7 @@ export function LoginForm({ initialMessage }: LoginFormProps) {
       redirectTo,
     });
 
-    router.push(redirectTo);
+    router.replace(redirectTo);
     router.refresh();
   }
 

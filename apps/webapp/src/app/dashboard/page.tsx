@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { getPremiumSession } from "@/lib/premium-session";
+import { cookies } from "next/headers";
+import { getPremiumSession, premiumSessionCookieName } from "@/lib/premium-session";
 
 const schedule = [
   {
@@ -20,10 +21,22 @@ const schedule = [
 ];
 
 export default async function DashboardPage() {
+  const cookieStore = await cookies();
+  const hasPremiumCookie = Boolean(cookieStore.get(premiumSessionCookieName)?.value);
   const session = await getPremiumSession();
 
+  console.log("/dashboard carregou", {
+    hasPremiumCookie,
+    premiumSessionValid: Boolean(session),
+    email: session?.email || null,
+  });
+
   if (!session) {
-    redirect("/login");
+    console.log("/dashboard redirect decidido", {
+      redirectTo: "/api/auth/logout?next=/login",
+      reason: hasPremiumCookie ? "invalid_chp_session" : "missing_chp_session",
+    });
+    redirect("/api/auth/logout?next=/login");
   }
 
   return (

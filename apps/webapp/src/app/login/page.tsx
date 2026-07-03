@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { LoginForm } from "@/app/login/login-form";
+import { getPremiumSession } from "@/lib/premium-session";
 
 const errorMessages: Record<string, string> = {
   dados: "Informe seu e-mail e senha para entrar.",
@@ -13,12 +13,18 @@ const errorMessages: Record<string, string> = {
 };
 
 export default async function LoginPage({ searchParams }: { searchParams?: Promise<{ erro?: string; senha?: string; conta?: string }> }) {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const session = await getPremiumSession();
 
-  if (user) {
+  console.log("/login carregou", {
+    premiumSessionValid: Boolean(session),
+    email: session?.email || null,
+  });
+
+  if (session) {
+    console.log("/login redirect decidido", {
+      redirectTo: "/dashboard",
+      reason: "valid_chp_session",
+    });
     redirect("/dashboard");
   }
 
