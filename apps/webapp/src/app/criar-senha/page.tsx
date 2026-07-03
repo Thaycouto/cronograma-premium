@@ -1,17 +1,20 @@
 import Link from "next/link";
-import { createPassword } from "@/app/criar-senha/create-password-action";
 
 const errorMessages: Record<string, string> = {
   dados: "Informe um e-mail válido e uma senha com pelo menos 8 caracteres.",
-  "sem-acesso": "Esse e-mail ainda não aparece como acesso aprovado.",
-  config: "O acesso existe, mas a conexão premium ainda precisa ser ajustada.",
-  conta: "Não foi possível criar a senha agora.",
+  "sem-acesso": "Não encontramos uma compra aprovada para este email.",
+  "conta-existente": "Esse email já tem uma senha criada. Entre para acessar seu cronograma.",
+  conta: "Não foi possível criar sua senha agora. Tente novamente em instantes.",
 };
 
 export default function CreatePasswordPage({ searchParams }: { searchParams?: Promise<{ erro?: string }> }) {
   return (
     <main className="grid min-h-svh place-items-center px-5 py-16">
-      <form action={createPassword} className="premium-shadow w-full max-w-md rounded-[34px] bg-[#fffaf6] p-6 soft-border md:p-8">
+      <form
+        action="/api/access/create-password"
+        className="premium-shadow w-full max-w-md rounded-[34px] bg-[#fffaf6] p-6 soft-border md:p-8"
+        method="post"
+      >
         <p className="text-xs font-black uppercase tracking-[0.22em] text-[#ad2d63]">Acesso premium</p>
         <h1 className="font-editorial mt-5 text-5xl font-black leading-none tracking-[-0.035em]">
           Criar senha
