@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
+import {
+  chronogramDisclaimer,
+  generateChronogram,
+  normalizeAiResultToChronogram,
+  type DiagnosisAnswers,
+} from "@/lib/chronogram";
+import { getPremiumSession } from "@/lib/premium-session";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { userHasPremiumAccess } from "@/lib/access/premium";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,7 +14,7 @@ export const dynamic = "force-dynamic";
 const MAX_IMAGE_SIZE_BYTES = 6 * 1024 * 1024;
 const MONTHLY_ANALYSIS_LIMIT = 3;
 const STORAGE_BUCKET = "hair-analysis-images";
-const OPENAI_MODEL = "gpt-5.5";
+const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
 const allowedImageTypes = new Set(["image/png", "image/jpeg", "image/jpg", "image/webp"]);
 
@@ -20,118 +25,32 @@ const extensionByType: Record<string, string> = {
   "image/webp": "webp",
 };
 
-const disclaimer =
-  "A análise é orientativa e não substitui avaliação profissional. Não diagnosticar doenças do couro cabeludo, queda severa, alergias ou condições médicas.";
-
-const hairAnalysisSchema = {
-  type: "object",
-  additionalProperties: false,
-  required: [
-    "visual_summary",
-    "hair_needs",
-    "risk_notes",
-    "main_priorities",
-    "recommended_frequency",
-    "next_steps",
-    "thirty_day_plan",
-    "disclaimer",
-  ],
-  properties: {
-    visual_summary: { type: "string" },
-    hair_needs: {
-      type: "array",
-      items: { type: "string" },
-    },
-    risk_notes: {
-      type: "array",
-      items: { type: "string" },
-    },
-    main_priorities: {
-      type: "array",
-      items: { type: "string" },
-    },
-    recommended_frequency: { type: "string" },
-    next_steps: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["type", "reason", "when"],
-        properties: {
-          type: { type: "string", enum: ["Hidratação", "Nutrição", "Reconstrução", "Pausa"] },
-          reason: { type: "string" },
-          when: { type: "string" },
-        },
-      },
-    },
-    thirty_day_plan: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["day", "date_label", "type", "objective", "how_to_do", "what_to_avoid"],
-        properties: {
-          day: { type: "integer" },
-          date_label: { type: "string" },
-          type: { type: "string", enum: ["Hidratação", "Nutrição", "Reconstrução", "Pausa"] },
-          objective: { type: "string" },
-          how_to_do: { type: "string" },
-          what_to_avoid: { type: "string" },
-        },
-      },
-    },
-    disclaimer: { type: "string", enum: [disclaimer] },
-  },
-} as const;
-
-const systemPrompt = `
-Você é uma consultora capilar digital do Couto Hair Program.
-Analise a foto enviada junto com as respostas do diagnóstico e gere um cronograma capilar orientativo de 30 dias.
-
-Regras obrigatórias:
-- Não prometa resultado garantido.
-- Não fale como médica.
-- Não diagnostique doenças, queda severa, alergias ou condições médicas.
-- Não recomende procedimento químico agressivo.
-- Não indique produto específico obrigatório nem marcas.
-- Fale em categorias de cuidado: hidratação, nutrição, reconstrução e pausa.
-- Seja prática, clara, segura e personalizada.
-- Use reconstrução com controle quando houver quebra, elasticidade, descoloração ou muita química.
-- Priorize hidratação e nutrição quando houver ressecamento, opacidade ou frizz.
-- Considere oleosidade de raiz para evitar excesso de peso.
-- Ajuste a frequência conforme o tempo disponível informado.
-- Retorne exatamente 2 próximas etapas em next_steps.
-- Retorne exatamente 30 itens em thirty_day_plan, um para cada dia.
-- Retorne somente JSON válido dentro do schema.
-- Use exatamente este disclaimer: "${disclaimer}"
-`.trim();
-
-type DiagnosisPayload = Record<string, unknown>;
-
-type OpenAIResponseBody = {
-  output_text?: unknown;
-  output?: unknown;
-  error?: unknown;
-};
-
-type SupabaseAdminClient = ReturnType<typeof createSupabaseAdmin>;
-
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
 }
 
-function parseDiagnosis(value: FormDataEntryValue | null): DiagnosisPayload | null {
+function parseDiagnosis(value: FormDataEntryValue | null): DiagnosisAnswers | null {
   if (typeof value !== "string" || !value.trim()) {
     return null;
   }
 
   try {
-    const parsed: unknown = JSON.parse(value);
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    const parsed = JSON.parse(value) as Partial<DiagnosisAnswers>;
+
+    if (
+      !parsed ||
+      typeof parsed.hairType !== "string" ||
+      !Array.isArray(parsed.currentState) ||
+      !Array.isArray(parsed.goals) ||
+      typeof parsed.chemistry !== "string" ||
+      typeof parsed.heatUse !== "string" ||
+      typeof parsed.frequency !== "string" ||
+      typeof parsed.damageLevel !== "string"
+    ) {
       return null;
     }
 
-    return parsed as DiagnosisPayload;
+    return parsed as DiagnosisAnswers;
   } catch {
     return null;
   }
@@ -142,62 +61,8 @@ function getMonthStartIso() {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
 }
 
-function extractOutputText(body: OpenAIResponseBody) {
-  if (typeof body.output_text === "string") {
-    return body.output_text;
-  }
-
-  if (!Array.isArray(body.output)) {
-    return null;
-  }
-
-  for (const item of body.output) {
-    if (!item || typeof item !== "object" || !("content" in item)) {
-      continue;
-    }
-
-    const content = (item as { content?: unknown }).content;
-    if (!Array.isArray(content)) {
-      continue;
-    }
-
-    for (const contentItem of content) {
-      if (!contentItem || typeof contentItem !== "object") {
-        continue;
-      }
-
-      const text = (contentItem as { text?: unknown }).text;
-      if (typeof text === "string") {
-        return text;
-      }
-    }
-  }
-
-  return null;
-}
-
-function isStructuredHairAnalysisResult(value: unknown) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return false;
-  }
-
-  const result = value as {
-    next_steps?: unknown;
-    thirty_day_plan?: unknown;
-    disclaimer?: unknown;
-  };
-
-  return (
-    Array.isArray(result.next_steps) &&
-    result.next_steps.length === 2 &&
-    Array.isArray(result.thirty_day_plan) &&
-    result.thirty_day_plan.length === 30 &&
-    result.disclaimer === disclaimer
-  );
-}
-
 async function uploadImageCopy(
-  admin: SupabaseAdminClient,
+  admin: ReturnType<typeof createSupabaseAdmin>,
   userId: string,
   imageBuffer: Buffer,
   contentType: string,
@@ -211,37 +76,141 @@ async function uploadImageCopy(
     });
 
     if (error) {
-      console.warn("Hair analysis image upload failed:", error.message);
+      console.warn("hair-analysis image upload failed", error.message);
       return null;
     }
 
     return `${STORAGE_BUCKET}/${path}`;
   } catch (error) {
-    console.warn("Hair analysis image upload skipped:", error);
+    console.warn("hair-analysis image upload skipped", error);
+    return null;
+  }
+}
+
+async function maybeCallOpenAi(diagnosis: DiagnosisAnswers, imageDataUrl: string) {
+  const openAiApiKey = process.env.OPENAI_API_KEY;
+
+  if (!openAiApiKey) {
+    return null;
+  }
+
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${openAiApiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: OPENAI_MODEL,
+      input: [
+        {
+          role: "system",
+          content:
+            "Você é uma consultora capilar digital. Gere uma análise orientativa, sem promessa de resultado, sem diagnóstico médico, sem marcas obrigatórias e sem procedimento químico agressivo.",
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "input_text",
+              text: JSON.stringify({
+                task:
+                  "Analise o diagnóstico e a foto do cabelo. Retorne somente JSON com visual_summary, main_needs, alerts, suggested_focus, next_steps e plan de 30 dias.",
+                diagnosis,
+                disclaimer: chronogramDisclaimer,
+              }),
+            },
+            {
+              type: "input_image",
+              image_url: imageDataUrl,
+            },
+          ],
+        },
+      ],
+      text: {
+        format: {
+          type: "json_schema",
+          name: "couto_hair_program_analysis",
+          strict: true,
+          schema: {
+            type: "object",
+            additionalProperties: false,
+            required: ["visual_summary", "main_needs", "alerts", "suggested_focus", "next_steps", "plan", "disclaimer"],
+            properties: {
+              visual_summary: { type: "string" },
+              main_needs: { type: "array", items: { type: "string" } },
+              alerts: { type: "array", items: { type: "string" } },
+              suggested_focus: { type: "string" },
+              next_steps: {
+                type: "array",
+                items: {
+                  type: "object",
+                  additionalProperties: false,
+                  required: ["type", "reason"],
+                  properties: {
+                    type: { type: "string", enum: ["Hidratação", "Nutrição", "Reconstrução", "Pausa"] },
+                    reason: { type: "string" },
+                  },
+                },
+              },
+              plan: {
+                type: "array",
+                items: {
+                  type: "object",
+                  additionalProperties: false,
+                  required: ["day", "week", "type", "title", "objective", "instructions", "observe", "avoid"],
+                  properties: {
+                    day: { type: "integer" },
+                    week: { type: "integer" },
+                    type: { type: "string", enum: ["Hidratação", "Nutrição", "Reconstrução", "Pausa"] },
+                    title: { type: "string" },
+                    objective: { type: "string" },
+                    instructions: { type: "string" },
+                    observe: { type: "string" },
+                    avoid: { type: "string" },
+                  },
+                },
+              },
+              disclaimer: { type: "string" },
+            },
+          },
+        },
+      },
+      max_output_tokens: 7000,
+    }),
+  });
+
+  const body = (await response.json().catch(() => null)) as {
+    output_text?: string;
+    output?: Array<{ content?: Array<{ text?: string }> }>;
+    error?: unknown;
+  } | null;
+
+  if (!response.ok) {
+    console.warn("OpenAI hair-analysis failed", body?.error ?? response.statusText);
+    return null;
+  }
+
+  const outputText =
+    body?.output_text ??
+    body?.output?.flatMap((item) => item.content ?? []).find((content) => typeof content.text === "string")?.text;
+
+  if (!outputText) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(outputText) as unknown;
+  } catch {
     return null;
   }
 }
 
 export async function POST(request: Request) {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const session = await getPremiumSession();
 
-  if (!user) {
-    return jsonError("Entre na sua conta para gerar a análise.", 401);
-  }
-
-  const hasPremiumAccess = await userHasPremiumAccess(user.id);
-
-  if (!hasPremiumAccess) {
-    return jsonError("Seu acesso premium precisa estar ativo para gerar a análise.", 403);
-  }
-
-  const openAiApiKey = process.env.OPENAI_API_KEY;
-
-  if (!openAiApiKey) {
-    return jsonError("A análise por IA ainda não está configurada no servidor.", 500);
+  if (!session) {
+    return jsonError("Entre novamente para gerar a análise.", 401);
   }
 
   let formData: FormData;
@@ -270,120 +239,70 @@ export async function POST(request: Request) {
     return jsonError("Envie uma imagem de até 6 MB.", 400);
   }
 
-  let admin: SupabaseAdminClient;
-  try {
-    admin = createSupabaseAdmin();
-  } catch {
-    return jsonError("A validação premium ainda não está configurada no servidor.", 500);
-  }
-
-  const monthStart = getMonthStartIso();
-  const { count, error: countError } = await admin
-    .from("ai_hair_analyses")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id)
-    .gte("created_at", monthStart);
-
-  if (countError) {
-    return jsonError("Não foi possível validar o limite de análises agora.", 500);
-  }
-
-  if ((count ?? 0) >= MONTHLY_ANALYSIS_LIMIT) {
-    return jsonError("Você já usou as 3 análises disponíveis neste mês.", 429);
-  }
-
   const imageBuffer = Buffer.from(await photo.arrayBuffer());
   const imageDataUrl = `data:${photo.type};base64,${imageBuffer.toString("base64")}`;
+  const fallbackPlan = generateChronogram(diagnosis);
+  let aiResult = await maybeCallOpenAi(diagnosis, imageDataUrl);
+  const usedFallback = !aiResult;
 
-  const openAiResponse = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${openAiApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: OPENAI_MODEL,
-      instructions: systemPrompt,
-      input: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "input_text",
-              text: JSON.stringify({
-                context:
-                  "Gerar análise capilar orientativa com base no diagnóstico e na foto enviada pela cliente.",
-                diagnosis,
-              }),
-            },
-            {
-              type: "input_image",
-              image_url: imageDataUrl,
-            },
-          ],
-        },
-      ],
-      text: {
-        format: {
-          type: "json_schema",
-          name: "couto_hair_analysis",
-          strict: true,
-          schema: hairAnalysisSchema,
-        },
-      },
-      max_output_tokens: 7000,
-    }),
-  });
+  if (!aiResult) {
+    aiResult = {
+      visual_summary: "Análise por foto em preparação. O cronograma foi criado com base no diagnóstico respondido.",
+      main_needs: fallbackPlan.mainNeeds,
+      alerts: fallbackPlan.alerts,
+      suggested_focus: fallbackPlan.suggestedFocus,
+      next_steps: fallbackPlan.nextSteps,
+      plan: fallbackPlan.plan,
+      disclaimer: chronogramDisclaimer,
+    };
+  }
 
-  let responseBody: OpenAIResponseBody;
+  const normalized = normalizeAiResultToChronogram(diagnosis, aiResult);
+  let analysisId: string | null = null;
+  let imageUrl: string | null = null;
+
   try {
-    responseBody = (await openAiResponse.json()) as OpenAIResponseBody;
-  } catch {
-    return jsonError("A análise voltou sem uma resposta válida.", 502);
-  }
+    const admin = createSupabaseAdmin();
+    const monthStart = getMonthStartIso();
+    const { count } = await admin
+      .from("ai_hair_analyses")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", session.user_id)
+      .gte("created_at", monthStart);
 
-  if (!openAiResponse.ok) {
-    console.error("OpenAI hair analysis failed:", responseBody.error ?? responseBody);
-    return jsonError("Não foi possível gerar a análise agora. Tente novamente em instantes.", 502);
-  }
+    if ((count ?? 0) >= MONTHLY_ANALYSIS_LIMIT) {
+      return jsonError("Você já usou as 3 análises disponíveis neste mês.", 429);
+    }
 
-  const outputText = extractOutputText(responseBody);
+    imageUrl = await uploadImageCopy(admin, session.user_id, imageBuffer, photo.type);
+    const { data, error } = await admin
+      .from("ai_hair_analyses")
+      .insert({
+        user_id: session.user_id,
+        email: session.email,
+        image_url: imageUrl,
+        diagnosis_json: diagnosis,
+        ai_result_json: aiResult,
+      })
+      .select("id")
+      .single();
 
-  if (!outputText) {
-    return jsonError("A análise voltou sem um resultado estruturado.", 502);
-  }
-
-  let aiResult: unknown;
-  try {
-    aiResult = JSON.parse(outputText);
-  } catch {
-    return jsonError("A análise voltou em um formato inesperado.", 502);
-  }
-
-  if (!isStructuredHairAnalysisResult(aiResult)) {
-    return jsonError("A análise voltou incompleta. Tente gerar novamente.", 502);
-  }
-
-  const imageUrl = await uploadImageCopy(admin, user.id, imageBuffer, photo.type);
-  const { data: insertedAnalysis, error: insertError } = await admin
-    .from("ai_hair_analyses")
-    .insert({
-      user_id: user.id,
-      image_url: imageUrl,
-      diagnosis_json: diagnosis,
-      ai_result_json: aiResult,
-    })
-    .select("id")
-    .single();
-
-  if (insertError) {
-    console.error("Hair analysis insert failed:", insertError.message);
-    return jsonError("A análise foi gerada, mas não foi possível salvar no seu painel.", 500);
+    if (error) {
+      console.warn("hair-analysis insert failed", error.message);
+    } else {
+      analysisId = data.id;
+    }
+  } catch (error) {
+    console.warn("hair-analysis persistence skipped", error);
   }
 
   return NextResponse.json({
-    analysisId: insertedAnalysis.id,
-    result: aiResult,
-    remainingThisMonth: Math.max(MONTHLY_ANALYSIS_LIMIT - (count ?? 0) - 1, 0),
+    analysisId,
+    imageUrl,
+    result: normalized,
+    usedFallback,
+    message: usedFallback
+      ? "Análise por foto em preparação. Seu cronograma foi criado com base no diagnóstico."
+      : "Análise por foto concluída.",
   });
 }
