@@ -4,15 +4,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
-type LoginFormProps = {
-  initialMessage?: string;
-};
-
-export function LoginForm({ initialMessage }: LoginFormProps) {
+export function CreatePasswordForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState(initialMessage || "");
+  const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -24,16 +20,15 @@ export function LoginForm({ initialMessage }: LoginFormProps) {
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    if (!normalizedEmail || !password) {
-      setMessage("Informe seu e-mail e senha para entrar.");
+    if (!normalizedEmail || password.length < 6) {
+      setMessage("Informe um e-mail válido e uma senha com pelo menos 6 caracteres.");
       return;
     }
 
     setIsLoading(true);
     setMessage("");
-    console.log("Login submit iniciado", { email: normalizedEmail });
 
-    const response = await fetch("/api/auth/login", {
+    const response = await fetch("/api/auth/create-password", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -48,30 +43,15 @@ export function LoginForm({ initialMessage }: LoginFormProps) {
       ok?: boolean;
       redirectTo?: string;
       error?: string;
-      code?: string;
-      details?: Record<string, unknown>;
     } | null;
 
     if (!response.ok || !result?.ok) {
-      console.error("Login error", {
-        email: normalizedEmail,
-        status: response.status,
-        error: result?.error,
-      });
-
       setMessage(result?.error || "Não conseguimos concluir agora. Tente novamente em alguns instantes.");
       setIsLoading(false);
       return;
     }
 
-    const redirectTo = result.redirectTo || "/dashboard";
-    console.log("Login redirect final", {
-      email: normalizedEmail,
-      redirectTo,
-    });
-
-    router.push(redirectTo);
-    router.refresh();
+    router.push(result.redirectTo || "/login?senha=criada");
   }
 
   return (
@@ -79,15 +59,15 @@ export function LoginForm({ initialMessage }: LoginFormProps) {
       className="premium-shadow w-full max-w-md rounded-[34px] bg-[#fffaf6] p-6 soft-border md:p-8"
       onSubmit={handleSubmit}
     >
-      <p className="text-xs font-black uppercase tracking-[0.22em] text-[#ad2d63]">Couto Hair Program</p>
+      <p className="text-xs font-black uppercase tracking-[0.22em] text-[#ad2d63]">Acesso premium</p>
       <h1 className="font-editorial mt-5 text-5xl font-black leading-none tracking-[-0.035em]">
-        Entrar no cronograma
+        Criar senha
       </h1>
       {message ? (
         <p className="mt-5 rounded-2xl bg-[#f6d4de] px-4 py-3 text-sm font-bold text-[#3e1224]">{message}</p>
       ) : null}
       <label className="mt-8 block text-sm font-extrabold" htmlFor="email">
-        Email
+        Email usado na compra
       </label>
       <input
         autoComplete="email"
@@ -103,9 +83,10 @@ export function LoginForm({ initialMessage }: LoginFormProps) {
         Senha
       </label>
       <input
-        autoComplete="current-password"
+        autoComplete="new-password"
         className="mt-2 w-full rounded-2xl border border-[#140b10]/15 bg-white px-4 py-4 outline-none transition focus:border-[#ad2d63]"
         id="password"
+        minLength={6}
         name="password"
         onChange={(event) => setPassword(event.target.value)}
         required
@@ -117,10 +98,10 @@ export function LoginForm({ initialMessage }: LoginFormProps) {
         disabled={isLoading}
         type="submit"
       >
-        {isLoading ? "Entrando..." : "Entrar"}
+        {isLoading ? "Criando..." : "Criar minha senha"}
       </button>
-      <Link className="mt-5 inline-flex text-sm font-extrabold text-[#ad2d63]" href="/criar-senha">
-        Criar senha com o e-mail da compra
+      <Link className="mt-5 inline-flex text-sm font-extrabold text-[#ad2d63]" href="/login">
+        Já tenho senha
       </Link>
     </form>
   );
