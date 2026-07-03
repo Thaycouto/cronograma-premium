@@ -83,6 +83,7 @@ export function LoginForm({ initialMessage }: LoginFormProps) {
       redirectTo?: string;
       error?: string;
       code?: string;
+      details?: Record<string, unknown>;
     } | null;
 
     if (!response.ok || !result?.ok) {
@@ -92,6 +93,7 @@ export function LoginForm({ initialMessage }: LoginFormProps) {
         status: response.status,
         code: result?.code,
         error: result?.error,
+        details: result?.details,
       });
 
       await supabase.auth.signOut();
