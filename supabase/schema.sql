@@ -51,3 +51,38 @@ on public.kiwify_events
 for select
 to authenticated
 using (false);
+
+create table if not exists public.ai_hair_analyses (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  image_url text,
+  diagnosis_json jsonb not null,
+  ai_result_json jsonb not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists ai_hair_analyses_user_created_at_idx
+on public.ai_hair_analyses (user_id, created_at desc);
+
+alter table public.ai_hair_analyses enable row level security;
+
+drop policy if exists "Users can read their own AI hair analyses" on public.ai_hair_analyses;
+create policy "Users can read their own AI hair analyses"
+on public.ai_hair_analyses
+for select
+to authenticated
+using (user_id = auth.uid());
+
+insert into storage.buckets (id, name, public)
+values ('hair-analysis-images', 'hair-analysis-images', false)
+on conflict (id) do nothing;
+
+drop policy if exists "Users can read their own hair analysis images" on storage.objects;
+create policy "Users can read their own hair analysis images"
+on storage.objects
+for select
+to authenticated
+using (
+  bucket_id = 'hair-analysis-images'
+  and split_part(name, '/', 1) = auth.uid()::text
+);

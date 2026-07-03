@@ -29,6 +29,12 @@ Webhook Kiwify:
 https://couto-hair-app.netlify.app/api/webhooks/kiwify
 ```
 
+Analise capilar por IA:
+
+```text
+https://couto-hair-app.netlify.app/api/ai/hair-analysis
+```
+
 ## Variáveis
 
 Use os arquivos:
@@ -37,6 +43,8 @@ Use os arquivos:
 - `apps/webapp/.env.example`
 
 Nunca suba `.env.local` ou chaves reais para o GitHub.
+
+Configure `OPENAI_API_KEY` somente no deploy do webapp. Essa chave nao deve existir na landing nem em arquivos versionados.
 
 ## Supabase
 
