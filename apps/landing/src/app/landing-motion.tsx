@@ -101,36 +101,42 @@ export function StickyReferenceGallery({ items }: { items: ReferencePair[] }) {
     offset: ["start end", "end start"],
   });
 
-  const titleY = useTransform(scrollYProgress, [0.08, 0.52, 0.95], [34, -10, -36]);
-  const titleOpacity = useTransform(scrollYProgress, [0.04, 0.18, 0.86, 0.98], [0, 1, 1, 0.78]);
-  const beforeOneY = useTransform(scrollYProgress, [0.05, 0.45, 0.9], [72, -12, -58]);
-  const beforeOneX = useTransform(scrollYProgress, [0.05, 0.45, 0.9], [-24, 10, -12]);
-  const beforeOneScale = useTransform(scrollYProgress, [0.05, 0.5, 0.9], [0.96, 1.02, 0.98]);
-  const afterOneY = useTransform(scrollYProgress, [0.1, 0.52, 0.92], [112, 0, -40]);
-  const afterOneX = useTransform(scrollYProgress, [0.1, 0.52, 0.92], [30, -6, 18]);
-  const afterOneScale = useTransform(scrollYProgress, [0.1, 0.52, 0.92], [0.95, 1.03, 0.99]);
-  const beforeTwoY = useTransform(scrollYProgress, [0.18, 0.62, 0.95], [170, 36, -8]);
-  const beforeTwoX = useTransform(scrollYProgress, [0.18, 0.62, 0.95], [42, -18, 8]);
-  const beforeTwoOpacity = useTransform(scrollYProgress, [0.15, 0.38], [0.45, 1]);
-  const afterTwoY = useTransform(scrollYProgress, [0.22, 0.68, 0.96], [210, 64, 4]);
-  const afterTwoX = useTransform(scrollYProgress, [0.22, 0.68, 0.96], [-36, 18, -10]);
-  const afterTwoOpacity = useTransform(scrollYProgress, [0.18, 0.43], [0.35, 1]);
+  const beforeOneY = useTransform(scrollYProgress, [0, 1], [42, -62]);
+  const beforeOneX = useTransform(scrollYProgress, [0, 1], [-18, 10]);
+  const beforeOneRotate = useTransform(scrollYProgress, [0, 1], [-1.2, 1.6]);
+  const beforeOneScale = useTransform(scrollYProgress, [0, 0.5, 1], [0.98, 1.02, 1]);
+  const afterOneY = useTransform(scrollYProgress, [0, 1], [-18, 56]);
+  const afterOneX = useTransform(scrollYProgress, [0, 1], [18, -10]);
+  const afterOneRotate = useTransform(scrollYProgress, [0, 1], [1.3, -1.4]);
+  const afterOneScale = useTransform(scrollYProgress, [0, 0.5, 1], [0.99, 1.025, 1]);
+  const beforeTwoY = useTransform(scrollYProgress, [0, 1], [96, -34]);
+  const beforeTwoX = useTransform(scrollYProgress, [0, 1], [26, -16]);
+  const beforeTwoRotate = useTransform(scrollYProgress, [0, 1], [1.1, -0.8]);
+  const afterTwoY = useTransform(scrollYProgress, [0, 1], [128, -12]);
+  const afterTwoX = useTransform(scrollYProgress, [0, 1], [-28, 14]);
+  const afterTwoRotate = useTransform(scrollYProgress, [0, 1], [-0.9, 1.2]);
 
   const [first, second] = items;
 
   return (
     <>
       <section
-        className="relative hidden min-h-[170vh] overflow-clip bg-[linear-gradient(180deg,#fff8f2_0%,#f6eee8_48%,#fff8f2_100%)] px-10 py-20 md:block"
+        className="relative hidden min-h-[180vh] overflow-visible bg-[linear-gradient(180deg,#fff8f2_0%,#f6eee8_48%,#fff8f2_100%)] px-10 py-20 md:block"
         ref={sectionRef}
       >
         <div className="sticky top-20 mx-auto grid h-[calc(100vh-120px)] max-w-6xl grid-cols-[0.82fr_1.18fr] items-center gap-10">
-          <motion.div className="max-w-md" style={{ opacity: titleOpacity, y: titleY }}>
+          <motion.div
+            className="max-w-md"
+            initial={{ opacity: 0, y: 24, filter: "blur(10px)" }}
+            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+            viewport={{ once: true, margin: "-10% 0px" }}
+            whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          >
             <h2 className="font-editorial text-6xl font-black leading-[0.92] tracking-[-0.04em] text-[#140b10] lg:text-7xl">
               O resultado que inspirou esse cronograma.
             </h2>
             <p className="mt-6 text-base font-bold leading-7 text-[#5b4d52]">
-              Antes de montar o seu, veja o que mudou quando o cuidado passou a ter direÃ§Ã£o.
+              Antes de montar o seu, veja o que mudou quando o cuidado passou a ter direção.
             </p>
           </motion.div>
 
@@ -138,16 +144,16 @@ export function StickyReferenceGallery({ items }: { items: ReferencePair[] }) {
             {first ? (
               <>
                 <ReferenceImageCard
-                  className="absolute left-0 top-[8%] z-20 h-[66%] w-[44%]"
+                  className="absolute left-[4%] top-[12%] z-20 h-[64%] w-[38%]"
                   label="Antes"
                   src={first.before}
-                  style={{ x: beforeOneX, y: beforeOneY, scale: beforeOneScale }}
+                  style={{ rotate: beforeOneRotate, scale: beforeOneScale, x: beforeOneX, y: beforeOneY }}
                 />
                 <ReferenceImageCard
-                  className="absolute right-[2%] top-[2%] z-30 h-[76%] w-[52%]"
+                  className="absolute right-[5%] top-[4%] z-30 h-[76%] w-[46%]"
                   label="Depois"
                   src={first.after}
-                  style={{ x: afterOneX, y: afterOneY, scale: afterOneScale }}
+                  style={{ rotate: afterOneRotate, scale: afterOneScale, x: afterOneX, y: afterOneY }}
                 />
               </>
             ) : null}
@@ -155,17 +161,17 @@ export function StickyReferenceGallery({ items }: { items: ReferencePair[] }) {
             {second ? (
               <>
                 <ReferenceImageCard
-                  className="absolute bottom-[2%] left-[8%] z-10 h-[47%] w-[38%]"
+                  className="absolute bottom-[4%] left-[22%] z-10 h-[43%] w-[30%]"
                   label="Antes"
                   src={second.before}
-                  style={{ opacity: beforeTwoOpacity, x: beforeTwoX, y: beforeTwoY }}
+                  style={{ rotate: beforeTwoRotate, x: beforeTwoX, y: beforeTwoY }}
                   subtle
                 />
                 <ReferenceImageCard
-                  className="absolute bottom-[7%] right-[10%] z-20 h-[49%] w-[40%]"
+                  className="absolute bottom-[8%] right-[24%] z-20 h-[45%] w-[32%]"
                   label="Depois"
                   src={second.after}
-                  style={{ opacity: afterTwoOpacity, x: afterTwoX, y: afterTwoY }}
+                  style={{ rotate: afterTwoRotate, x: afterTwoX, y: afterTwoY }}
                   subtle
                 />
               </>
@@ -180,7 +186,7 @@ export function StickyReferenceGallery({ items }: { items: ReferencePair[] }) {
             O resultado que inspirou esse cronograma.
           </h2>
           <p className="mt-6 max-w-xl text-base font-bold leading-7 text-[#5b4d52]">
-            Antes de montar o seu, veja o que mudou quando o cuidado passou a ter direÃ§Ã£o.
+            Antes de montar o seu, veja o que mudou quando o cuidado passou a ter direção.
           </p>
         </RevealBlock>
 
