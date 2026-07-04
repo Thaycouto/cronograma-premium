@@ -90,15 +90,46 @@ create table if not exists public.chronograms (
   diagnosis_json jsonb not null,
   plan_json jsonb not null,
   current_day integer not null default 1,
+  status text not null default 'active',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.chronograms
+add column if not exists status text not null default 'active';
+
+update public.chronograms
+set status = 'active'
+where status is null;
 
 create index if not exists chronograms_email_created_at_idx
 on public.chronograms (lower(email), created_at desc);
 
 create index if not exists chronograms_user_created_at_idx
 on public.chronograms (user_id, created_at desc);
+
+with ranked_chronograms as (
+  select
+    id,
+    row_number() over (
+      partition by lower(email)
+      order by created_at desc, id desc
+    ) as row_number
+  from public.chronograms
+  where status = 'active'
+)
+update public.chronograms
+set status = 'archived',
+    updated_at = now()
+where id in (
+  select id
+  from ranked_chronograms
+  where row_number > 1
+);
+
+create unique index if not exists chronograms_one_active_per_email_idx
+on public.chronograms (lower(email))
+where status = 'active';
 
 alter table public.chronograms enable row level security;
 
@@ -108,8 +139,11 @@ on public.chronograms
 for select
 to authenticated
 using (
-  user_id = auth.uid()
-  or lower(email) = lower((auth.jwt() ->> 'email'))
+  status = 'active'
+  and (
+    user_id = auth.uid()
+    or lower(email) = lower((auth.jwt() ->> 'email'))
+  )
 );
 
 create table if not exists public.treatment_logs (

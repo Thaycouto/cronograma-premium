@@ -6,15 +6,50 @@ import { createSupabaseAdmin } from "@/lib/supabase-admin";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+type PersistedStepStatus = Exclude<StepStatus, "pendente">;
+
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
 }
 
-function isStepStatus(value: unknown): value is Exclude<StepStatus, "pendente"> {
-  return value === "realizado" || value === "pulado";
+function normalizeStepStatus(value: unknown): PersistedStepStatus | null {
+  if (value === "realizado" || value === "completed") {
+    return "realizado";
+  }
+
+  if (value === "pulado" || value === "skipped") {
+    return "pulado";
+  }
+
+  return null;
 }
 
-function updatePlanStatus(planJson: unknown, stepId: string, status: Exclude<StepStatus, "pendente">, notes: string) {
+function isMissingStatusColumn(error: { message?: string } | null) {
+  return Boolean(error?.message?.toLowerCase().includes("chronograms.status"));
+}
+
+async function findChronogramForStep(admin: ReturnType<typeof createSupabaseAdmin>, chronogramId: string, email: string) {
+  const activeQuery = await admin
+    .from("chronograms")
+    .select("*")
+    .eq("id", chronogramId)
+    .eq("email", email)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (!activeQuery.error || !isMissingStatusColumn(activeQuery.error)) {
+    return activeQuery;
+  }
+
+  return admin
+    .from("chronograms")
+    .select("*")
+    .eq("id", chronogramId)
+    .eq("email", email)
+    .maybeSingle();
+}
+
+function updatePlanStatus(planJson: unknown, stepId: string, status: PersistedStepStatus, notes: string) {
   if (!planJson || typeof planJson !== "object" || Array.isArray(planJson)) {
     return planJson;
   }
@@ -25,6 +60,7 @@ function updatePlanStatus(planJson: unknown, stepId: string, status: Exclude<Ste
     return planJson;
   }
 
+  const completedAt = new Date().toISOString();
   const updatedPlan = plan.plan.map((step: ChronogramStep) => {
     if (step.id !== stepId) {
       return step;
@@ -34,7 +70,7 @@ function updatePlanStatus(planJson: unknown, stepId: string, status: Exclude<Ste
       ...step,
       status,
       notes,
-      completedAt: new Date().toISOString(),
+      completedAt,
     };
   });
 
@@ -42,6 +78,33 @@ function updatePlanStatus(planJson: unknown, stepId: string, status: Exclude<Ste
     ...plan,
     plan: updatedPlan,
   };
+}
+
+export async function GET() {
+  const session = await getPremiumSession();
+
+  if (!session) {
+    return jsonError("Entre novamente para carregar seu histórico.", 401);
+  }
+
+  try {
+    const admin = createSupabaseAdmin();
+    const { data, error } = await admin
+      .from("treatment_logs")
+      .select("*")
+      .eq("email", session.email)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.warn("treatment-log/get failed", error.message);
+      return jsonError("Não foi possível carregar seu histórico agora.", 500);
+    }
+
+    return NextResponse.json({ logs: data ?? [] });
+  } catch (error) {
+    console.error("treatment-log/get unexpected", error);
+    return jsonError("Não foi possível carregar seu histórico agora.", 500);
+  }
 }
 
 export async function POST(request: Request) {
@@ -60,38 +123,23 @@ export async function POST(request: Request) {
     notes?: string;
   } | null;
 
+  const status = normalizeStepStatus(body?.status);
+
   if (!body?.chronogramId || !body.stepId || !body.treatmentType || typeof body.scheduledDay !== "number") {
     return jsonError("Escolha uma etapa válida do cronograma.", 400);
   }
 
-  if (!isStepStatus(body.status)) {
+  if (!status) {
     return jsonError("Escolha se a etapa foi realizada ou pulada.", 400);
-  }
-
-  if (body.chronogramId.startsWith("local-")) {
-    return NextResponse.json({
-      log: {
-        id: `local-log-${Date.now()}`,
-        email: session.email,
-        chronogram_id: body.chronogramId,
-        treatment_type: body.treatmentType,
-        scheduled_day: body.scheduledDay,
-        status: body.status,
-        notes: String(body.notes || "").trim(),
-        completed_at: body.status === "realizado" ? new Date().toISOString() : null,
-        created_at: new Date().toISOString(),
-      },
-    });
   }
 
   try {
     const admin = createSupabaseAdmin();
-    const { data: chronogram, error: chronogramError } = await admin
-      .from("chronograms")
-      .select("*")
-      .eq("id", body.chronogramId)
-      .eq("email", session.email)
-      .maybeSingle();
+    const { data: chronogram, error: chronogramError } = await findChronogramForStep(
+      admin,
+      body.chronogramId,
+      session.email,
+    );
 
     if (chronogramError || !chronogram) {
       console.warn("treatment-log chronogram lookup failed", chronogramError?.message);
@@ -99,7 +147,7 @@ export async function POST(request: Request) {
     }
 
     const notes = String(body.notes || "").trim();
-    const completedAt = body.status === "realizado" ? new Date().toISOString() : null;
+    const completedAt = status === "realizado" ? new Date().toISOString() : null;
     const { data: log, error: logError } = await admin
       .from("treatment_logs")
       .insert({
@@ -107,7 +155,7 @@ export async function POST(request: Request) {
         chronogram_id: body.chronogramId,
         treatment_type: body.treatmentType,
         scheduled_day: body.scheduledDay,
-        status: body.status,
+        status,
         notes,
         completed_at: completedAt,
       })
@@ -119,7 +167,7 @@ export async function POST(request: Request) {
       return jsonError("Não foi possível salvar o histórico agora.", 500);
     }
 
-    const updatedPlanJson = updatePlanStatus(chronogram.plan_json, body.stepId, body.status, notes);
+    const updatedPlanJson = updatePlanStatus(chronogram.plan_json, body.stepId, status, notes);
     const { data: updatedChronogram, error: updateError } = await admin
       .from("chronograms")
       .update({
@@ -127,19 +175,18 @@ export async function POST(request: Request) {
         updated_at: new Date().toISOString(),
       })
       .eq("id", body.chronogramId)
+      .eq("email", session.email)
       .select("*")
       .single();
 
     if (updateError) {
       console.warn("chronogram status update failed", updateError.message);
+      return jsonError("O histórico foi salvo, mas não foi possível atualizar a etapa no cronograma.", 500);
     }
 
     return NextResponse.json({
       log,
-      chronogram: updatedChronogram ?? {
-        ...chronogram,
-        plan_json: updatedPlanJson,
-      },
+      chronogram: updatedChronogram,
     });
   } catch (error) {
     console.error("treatment-log unexpected", error);

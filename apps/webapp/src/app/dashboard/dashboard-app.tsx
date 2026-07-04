@@ -133,7 +133,6 @@ export function DashboardApp({ email }: DashboardAppProps) {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [storageReady, setStorageReady] = useState(true);
 
   const plan = chronogram?.plan_json;
   const todayStep = getTodayStep(plan);
@@ -150,20 +149,28 @@ export function DashboardApp({ email }: DashboardAppProps) {
       const result = (await response.json().catch(() => null)) as {
         chronogram?: ChronogramRecord | null;
         logs?: TreatmentLog[];
-        storageReady?: boolean;
+        error?: string;
       } | null;
 
       if (!active) {
         return;
       }
 
+      if (!response.ok) {
+        setMessage(result?.error ?? "Não foi possível carregar seus dados salvos agora.");
+        setIsLoading(false);
+        return;
+      }
+
       if (result?.chronogram) {
         setChronogram(result.chronogram);
         setDiagnosis(result.chronogram.diagnosis_json);
+      } else {
+        setChronogram(null);
+        setDiagnosis(emptyDiagnosis);
       }
 
       setLogs(result?.logs ?? []);
-      setStorageReady(result?.storageReady ?? true);
       setIsLoading(false);
     }
 
@@ -341,6 +348,8 @@ export function DashboardApp({ email }: DashboardAppProps) {
       created_at: new Date().toISOString(),
     };
 
+    const previousChronogram = chronogram;
+    const previousLogs = logs;
     setChronogram({ ...chronogram, plan_json: updatedPlan });
     setLogs((current) => [localLog, ...current]);
     setSelectedStep(null);
@@ -366,11 +375,16 @@ export function DashboardApp({ email }: DashboardAppProps) {
       log?: TreatmentLog;
     } | null;
 
-    if (response.ok && result?.chronogram) {
-      setChronogram(result.chronogram);
-      if (result.log) {
-        setLogs((current) => [result.log as TreatmentLog, ...current.filter((item) => item.id !== localLog.id)]);
-      }
+    if (!response.ok || !result?.chronogram) {
+      setChronogram(previousChronogram);
+      setLogs(previousLogs);
+      setMessage("Não foi possível salvar essa etapa. Tente novamente.");
+      return;
+    }
+
+    setChronogram(result.chronogram);
+    if (result.log) {
+      setLogs((current) => [result.log as TreatmentLog, ...current.filter((item) => item.id !== localLog.id)]);
     }
   }
 
@@ -430,12 +444,6 @@ export function DashboardApp({ email }: DashboardAppProps) {
 
         {message ? (
           <p className="mt-5 rounded-[22px] bg-[#f6d4de] px-5 py-4 text-sm font-extrabold text-[#3e1224]">{message}</p>
-        ) : null}
-
-        {!storageReady ? (
-          <p className="mt-4 rounded-[22px] border border-[#ad2d63]/20 bg-[#fffaf6] px-5 py-4 text-sm font-bold text-[#5b4d52]">
-            O painel está funcionando. Para salvar tudo de forma permanente, rode a versão atualizada do schema no Supabase.
-          </p>
         ) : null}
 
         {isLoading ? (
