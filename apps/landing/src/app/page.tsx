@@ -1,5 +1,5 @@
 import { getSupportWhatsAppUrl } from "@/app/support-whatsapp";
-import { AnimatedOpening, RevealBlock, StickyReferenceGallery } from "@/app/landing-motion";
+import { AnimatedOpening, ReferenceGallery, RevealBlock } from "@/app/landing-motion";
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://couto-hair-app.netlify.app";
 const kiwifyCheckoutUrl = process.env.NEXT_PUBLIC_KIWIFY_CHECKOUT_URL || "#acesso";
@@ -150,7 +150,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <StickyReferenceGallery items={resultPairs} />
+      <ReferenceGallery items={resultPairs} />
 
       <section className="bg-[#140b10] px-5 py-20 text-white md:px-10">
         <RevealBlock className="mx-auto grid max-w-6xl gap-10 md:grid-cols-[0.9fr_1fr] md:items-start">
