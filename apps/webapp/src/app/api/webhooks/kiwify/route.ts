@@ -4,6 +4,24 @@ import { normalizeEmail } from "@/lib/format/email";
 
 const APPROVED_STATUS = new Set(["approved", "paid", "completed", "active"]);
 const CANCELED_STATUS = new Set(["canceled", "cancelled", "refunded", "chargeback", "expired"]);
+const APPROVED_EVENTS = new Set([
+  "compra_aprovada",
+  "compra aprovada",
+  "purchase_approved",
+  "order_approved",
+  "order.paid",
+  "paid",
+  "approved",
+]);
+const CANCELED_EVENTS = new Set([
+  "compra_cancelada",
+  "compra reembolsada",
+  "purchase_canceled",
+  "purchase_cancelled",
+  "order_refunded",
+  "refund",
+  "chargeback",
+]);
 
 export async function POST(request: Request) {
   const configuredSecret = process.env.KIWIFY_WEBHOOK_SECRET;
@@ -56,7 +74,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true, access: "revoked" });
   }
 
-  if (!event.status || !APPROVED_STATUS.has(event.status)) {
+  if (event.eventType && CANCELED_EVENTS.has(event.eventType)) {
+    const { error } = await supabase
+      .from("access_grants")
+      .update({
+        status: "inactive",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("email", email);
+
+    if (error) {
+      return NextResponse.json({ error: "Could not revoke access" }, { status: 500 });
+    }
+
+    return NextResponse.json({ received: true, access: "revoked" });
+  }
+
+  const isApproved = Boolean(
+    (event.status && APPROVED_STATUS.has(event.status)) ||
+      (event.eventType && APPROVED_EVENTS.has(event.eventType)),
+  );
+
+  if (!isApproved) {
     return NextResponse.json({ received: true, access: "ignored" });
   }
 
@@ -89,7 +128,7 @@ function readKiwifyEvent(payload: Record<string, unknown>) {
 
   return {
     eventId: readString(payload.event_id) || readString(payload.id) || readString(payload.webhook_event_id),
-    eventType: readString(payload.event) || readString(payload.event_type) || readString(payload.type),
+    eventType: normalizeEventType(readString(payload.event) || readString(payload.event_type) || readString(payload.type)),
     email: readString(customer?.email) || readString(payload.email) || readString(order?.email),
     orderId: readString(order?.id) || readString(order?.order_id) || readString(payload.order_id) || readString(payload.sale_id),
     productId: readString(product?.id) || readString(payload.product_id),
@@ -97,6 +136,10 @@ function readKiwifyEvent(payload: Record<string, unknown>) {
     purchasedAt: readString(payload.approved_at) || readString(payload.paid_at) || readString(payload.created_at),
     status,
   };
+}
+
+function normalizeEventType(value: string | undefined) {
+  return value?.trim().toLowerCase();
 }
 
 function readObject(value: unknown) {
