@@ -686,6 +686,9 @@ function DiagnosisView({
           <p className="mt-3 text-xs font-bold leading-5 text-[#7a6870]">
             Se a análise por foto ainda não estiver disponível no servidor, o cronograma será criado pelo diagnóstico.
           </p>
+          <p className="mt-4 rounded-[20px] bg-[#f3e7de] p-4 text-xs font-bold leading-5 text-[#5b4d52]">
+            As informações e fotos enviadas são usadas para gerar seu cronograma personalizado. A análise é orientativa e não substitui avaliação profissional.
+          </p>
         </div>
       </section>
 

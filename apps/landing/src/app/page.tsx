@@ -1,5 +1,8 @@
+import { getSupportWhatsAppUrl } from "@/app/support-whatsapp";
+
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://couto-hair-app.netlify.app";
 const kiwifyCheckoutUrl = process.env.NEXT_PUBLIC_KIWIFY_CHECKOUT_URL || "#acesso";
+const supportUrl = getSupportWhatsAppUrl();
 
 const resultPairs = [
   {
@@ -45,9 +48,58 @@ const previewItems = [
   },
 ];
 
+const faqItems = [
+  {
+    question: "Cronograma capilar funciona para cabelo quebradiço?",
+    answer:
+      "Ajuda a organizar cuidados como hidratação, nutrição, reconstrução e pausas. O resultado depende do estado do fio, constância e histórico químico.",
+  },
+  {
+    question: "Cabelo quebradiço: o que fazer?",
+    answer:
+      "O primeiro passo é entender se o fio precisa de água, lipídios, força ou pausa. Por isso o diagnóstico vem antes do cronograma.",
+  },
+  {
+    question: "O cronograma serve para cabelo com química?",
+    answer:
+      "Sim, mas o cuidado precisa ser mais controlado. O excesso de reconstrução ou produtos pesados pode deixar o fio rígido ou sobrecarregado.",
+  },
+  {
+    question: "Preciso comprar vários produtos?",
+    answer: "Não necessariamente. O cronograma organiza categorias de cuidado, não obriga marcas específicas.",
+  },
+  {
+    question: "O cronograma é igual para todo mundo?",
+    answer:
+      "Não. O acesso completo considera diagnóstico, objetivo, sinais do fio e, quando disponível, foto do cabelo.",
+  },
+  {
+    question: "Em quanto tempo vejo resultado?",
+    answer:
+      "Algumas pessoas percebem melhora no toque e brilho nas primeiras semanas, mas não prometemos resultado garantido. O foco é constância e cuidado correto.",
+  },
+];
+
+const faqStructuredData = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqItems.map((item) => ({
+    "@type": "Question",
+    name: item.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: item.answer,
+    },
+  })),
+};
+
 export default function LandingPage() {
   return (
     <main>
+      <script
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqStructuredData) }}
+        type="application/ld+json"
+      />
       <header className="fixed left-3 right-3 top-3 z-20 flex items-center justify-between rounded-[28px] bg-[#fffaf6]/88 px-4 py-3 shadow-[0_18px_60px_rgba(62,18,36,0.10)] backdrop-blur md:left-10 md:right-10">
         <a className="text-sm font-extrabold tracking-[-0.02em]" href="#">
           Couto Hair Program
@@ -197,6 +249,25 @@ export default function LandingPage() {
         </div>
       </section>
 
+      <section className="px-5 pb-20 md:px-10">
+        <div className="mx-auto max-w-6xl">
+          <div className="max-w-3xl">
+            <h2 className="font-editorial text-5xl font-black leading-[0.95] tracking-[-0.035em] md:text-7xl">
+              Dúvidas comuns antes de começar.
+            </h2>
+          </div>
+
+          <div className="mt-10 grid gap-4 md:grid-cols-2">
+            {faqItems.map((item) => (
+              <article className="rounded-[28px] bg-[#fffaf6] p-6 soft-border" key={item.question}>
+                <h3 className="font-editorial text-3xl font-black leading-none text-[#140b10]">{item.question}</h3>
+                <p className="mt-4 text-sm font-bold leading-7 text-[#5b4d52]">{item.answer}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section id="acesso" className="px-5 pb-24 md:px-10">
         <div className="mx-auto max-w-4xl text-center">
           <h2 className="font-editorial text-5xl font-black leading-[0.95] tracking-[-0.035em] md:text-7xl">
@@ -221,6 +292,23 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      <footer className="border-t border-[#140b10]/10 px-5 py-10 md:px-10">
+        <div className="mx-auto flex max-w-6xl flex-col gap-5 text-sm font-bold text-[#5b4d52] md:flex-row md:items-center md:justify-between">
+          <p>© 2026 Couto Hair Program. Todos os direitos reservados.</p>
+          <nav className="flex flex-wrap gap-4">
+            <a className="transition hover:text-[#ad2d63]" href="/privacidade">
+              Política de Privacidade
+            </a>
+            <a className="transition hover:text-[#ad2d63]" href="/termos">
+              Termos de Uso
+            </a>
+            <a className="transition hover:text-[#ad2d63]" href={supportUrl} rel="noreferrer" target="_blank">
+              Suporte
+            </a>
+          </nav>
+        </div>
+      </footer>
     </main>
   );
 }

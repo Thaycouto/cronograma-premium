@@ -60,9 +60,7 @@ export function CreatePasswordForm() {
       onSubmit={handleSubmit}
     >
       <p className="text-xs font-black uppercase tracking-[0.22em] text-[#ad2d63]">Acesso premium</p>
-      <h1 className="font-editorial mt-5 text-5xl font-black leading-none tracking-[-0.035em]">
-        Criar senha
-      </h1>
+      <h1 className="font-editorial mt-5 text-5xl font-black leading-none tracking-[-0.035em]">Criar senha</h1>
       {message ? (
         <p className="mt-5 rounded-2xl bg-[#f6d4de] px-4 py-3 text-sm font-bold text-[#3e1224]">{message}</p>
       ) : null}
@@ -100,6 +98,22 @@ export function CreatePasswordForm() {
       >
         {isLoading ? "Criando..." : "Criar minha senha"}
       </button>
+      <div className="mt-5 space-y-3 rounded-[22px] bg-[#f3e7de] p-4 text-xs font-bold leading-5 text-[#5b4d52]">
+        <p>
+          Seus dados são usados apenas para validar seu acesso, salvar seu cronograma e melhorar sua experiência dentro do Couto Hair Program.
+        </p>
+        <p>
+          Ao continuar, você concorda com os{" "}
+          <Link className="font-black text-[#ad2d63]" href="/termos">
+            Termos de Uso
+          </Link>{" "}
+          e a{" "}
+          <Link className="font-black text-[#ad2d63]" href="/privacidade">
+            Política de Privacidade
+          </Link>
+          .
+        </p>
+      </div>
       <Link className="mt-5 inline-flex text-sm font-extrabold text-[#ad2d63]" href="/login">
         Já tenho senha
       </Link>

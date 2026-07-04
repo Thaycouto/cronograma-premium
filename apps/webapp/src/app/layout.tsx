@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Manrope } from "next/font/google";
+import { SiteFooter } from "@/app/site-footer";
+import { SupportWhatsAppButton } from "@/app/support-whatsapp";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -22,7 +24,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pt-BR">
-      <body className={`${fraunces.variable} ${manrope.variable}`}>{children}</body>
+      <body className={`${fraunces.variable} ${manrope.variable}`}>
+        {children}
+        <SiteFooter />
+        <SupportWhatsAppButton />
+      </body>
     </html>
   );
 }

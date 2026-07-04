@@ -119,6 +119,22 @@ export function LoginForm({ initialMessage }: LoginFormProps) {
       >
         {isLoading ? "Entrando..." : "Entrar"}
       </button>
+      <div className="mt-5 space-y-3 rounded-[22px] bg-[#f3e7de] p-4 text-xs font-bold leading-5 text-[#5b4d52]">
+        <p>
+          Seus dados são usados apenas para validar seu acesso, salvar seu cronograma e melhorar sua experiência dentro do Couto Hair Program.
+        </p>
+        <p>
+          Ao continuar, você concorda com os{" "}
+          <Link className="font-black text-[#ad2d63]" href="/termos">
+            Termos de Uso
+          </Link>{" "}
+          e a{" "}
+          <Link className="font-black text-[#ad2d63]" href="/privacidade">
+            Política de Privacidade
+          </Link>
+          .
+        </p>
+      </div>
       <Link className="mt-5 inline-flex text-sm font-extrabold text-[#ad2d63]" href="/criar-senha">
         Criar senha com o e-mail da compra
       </Link>
