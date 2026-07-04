@@ -139,6 +139,19 @@ for select
 to authenticated
 using (lower(email) = lower((auth.jwt() ->> 'email')));
 
+grant usage on schema public to anon, authenticated, service_role;
+
+grant all privileges on table public.access_grants to service_role;
+grant all privileges on table public.kiwify_events to service_role;
+grant all privileges on table public.ai_hair_analyses to service_role;
+grant all privileges on table public.chronograms to service_role;
+grant all privileges on table public.treatment_logs to service_role;
+
+grant select on table public.access_grants to authenticated;
+grant select on table public.ai_hair_analyses to authenticated;
+grant select on table public.chronograms to authenticated;
+grant select on table public.treatment_logs to authenticated;
+
 insert into storage.buckets (id, name, public)
 values ('hair-analysis-images', 'hair-analysis-images', false)
 on conflict (id) do nothing;
