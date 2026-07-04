@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import type { ReactNode } from "react";
 import type { ChronogramPlan, ChronogramStep, DiagnosisAnswers, StepStatus } from "@/lib/chronogram";
 
@@ -57,6 +58,22 @@ const emptyDiagnosis: DiagnosisAnswers = {
   frequency: "",
   damageLevel: "",
   notes: "",
+};
+
+const motionEase = [0.16, 1, 0.3, 1] as const;
+
+const panelMotion = {
+  initial: { opacity: 0, y: 18, filter: "blur(8px)" },
+  animate: { opacity: 1, y: 0, filter: "blur(0px)" },
+  exit: { opacity: 0, y: -10, filter: "blur(6px)" },
+  transition: { duration: 0.42, ease: motionEase },
+};
+
+const softItemMotion = {
+  initial: { opacity: 0, y: 16 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-8% 0px" },
+  transition: { duration: 0.48, ease: motionEase },
 };
 
 function classNames(...values: Array<string | false | null | undefined>) {
@@ -133,12 +150,18 @@ export function DashboardApp({ email }: DashboardAppProps) {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showEntrance, setShowEntrance] = useState(true);
 
   const plan = chronogram?.plan_json;
   const todayStep = getTodayStep(plan);
   const nextSteps = getNextActionableSteps(plan);
   const progress = getProgress(plan);
   const weeks = useMemo(() => groupByWeek(plan), [plan]);
+
+  useEffect(() => {
+    const entranceTimer = window.setTimeout(() => setShowEntrance(false), 1900);
+    return () => window.clearTimeout(entranceTimer);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -398,6 +421,26 @@ export function DashboardApp({ email }: DashboardAppProps) {
 
   return (
     <main className="min-h-svh pb-24 md:pb-10">
+      <AnimatePresence>
+        {showEntrance ? (
+          <motion.div
+            animate={{ opacity: 1 }}
+            className="pointer-events-none fixed inset-0 z-50 grid place-items-center bg-[#fff8f2]/92 px-6 backdrop-blur-sm"
+            exit={{ opacity: 0, filter: "blur(8px)" }}
+            initial={{ opacity: 0 }}
+            transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <motion.p
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              className="font-editorial max-w-3xl text-center text-5xl font-black leading-[0.95] tracking-[-0.04em] text-[#140b10] md:text-7xl"
+              initial={{ opacity: 0, y: 24, filter: "blur(10px)" }}
+              transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+            >
+              Pronta para viver a melhor fase do seu cabelo?
+            </motion.p>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
       <div className="mx-auto max-w-7xl px-4 py-5 md:px-8 md:py-8">
         <header className="rounded-[30px] bg-[#140b10] p-5 text-white md:p-7">
           <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
@@ -452,57 +495,65 @@ export function DashboardApp({ email }: DashboardAppProps) {
           </section>
         ) : null}
 
-        {!isLoading && activeTab === "inicio" ? (
-          <HomeView
-            chronogram={chronogram}
-            nextSteps={nextSteps}
-            progress={progress}
-            todayStep={todayStep}
-            onOpenSchedule={() => setActiveTab("cronograma")}
-            onOpenDiagnosis={refazerDiagnostico}
-            onOpenPhoto={() => setActiveTab("diagnostico")}
-            onOpenStep={setSelectedStep}
-            onQuickDone={(step) => updateStep(step, "realizado")}
-          />
-        ) : null}
+        <AnimatePresence mode="wait">
+          {!isLoading ? (
+            <motion.div key={activeTab} {...panelMotion}>
+              {activeTab === "inicio" ? (
+                <HomeView
+                  chronogram={chronogram}
+                  nextSteps={nextSteps}
+                  progress={progress}
+                  todayStep={todayStep}
+                  onOpenSchedule={() => setActiveTab("cronograma")}
+                  onOpenDiagnosis={refazerDiagnostico}
+                  onOpenPhoto={() => setActiveTab("diagnostico")}
+                  onOpenStep={setSelectedStep}
+                  onQuickDone={(step) => updateStep(step, "realizado")}
+                />
+              ) : null}
 
-        {!isLoading && activeTab === "diagnostico" ? (
-          <DiagnosisView
-            diagnosis={diagnosis}
-            isGenerating={isGenerating}
-            photoPreview={photoPreview}
-            onChangeField={setSingleField}
-            onChangeNotes={(value) => setDiagnosis((current) => ({ ...current, notes: value }))}
-            onPhotoChange={handlePhotoChange}
-            onRemovePhoto={() => {
-              setPhoto(null);
-              setPhotoPreview("");
-            }}
-            onSubmit={submitDiagnosis}
-            onToggleCurrentState={toggleCurrentState}
-            onToggleGoal={toggleGoal}
-          />
-        ) : null}
+              {activeTab === "diagnostico" ? (
+                <DiagnosisView
+                  diagnosis={diagnosis}
+                  isGenerating={isGenerating}
+                  photoPreview={photoPreview}
+                  onChangeField={setSingleField}
+                  onChangeNotes={(value) => setDiagnosis((current) => ({ ...current, notes: value }))}
+                  onPhotoChange={handlePhotoChange}
+                  onRemovePhoto={() => {
+                    setPhoto(null);
+                    setPhotoPreview("");
+                  }}
+                  onSubmit={submitDiagnosis}
+                  onToggleCurrentState={toggleCurrentState}
+                  onToggleGoal={toggleGoal}
+                />
+              ) : null}
 
-        {!isLoading && activeTab === "cronograma" ? (
-          <ScheduleView chronogram={chronogram} onOpenDiagnosis={refazerDiagnostico} onOpenStep={setSelectedStep} weeks={weeks} />
-        ) : null}
+              {activeTab === "cronograma" ? (
+                <ScheduleView chronogram={chronogram} onOpenDiagnosis={refazerDiagnostico} onOpenStep={setSelectedStep} weeks={weeks} />
+              ) : null}
 
-        {!isLoading && activeTab === "historico" ? <HistoryView logs={logs} /> : null}
+              {activeTab === "historico" ? <HistoryView logs={logs} /> : null}
 
-        {!isLoading && activeTab === "perfil" ? <ProfileView chronogram={chronogram} onOpenDiagnosis={refazerDiagnostico} /> : null}
+              {activeTab === "perfil" ? <ProfileView chronogram={chronogram} onOpenDiagnosis={refazerDiagnostico} /> : null}
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
       </div>
 
-      {selectedStep ? (
-        <TreatmentDetail
-          notes={stepNotes}
-          step={selectedStep}
-          onChangeNotes={setStepNotes}
-          onClose={() => setSelectedStep(null)}
-          onSkip={() => updateStep(selectedStep, "pulado")}
-          onDone={() => updateStep(selectedStep, "realizado")}
-        />
-      ) : null}
+      <AnimatePresence>
+        {selectedStep ? (
+          <TreatmentDetail
+            notes={stepNotes}
+            step={selectedStep}
+            onChangeNotes={setStepNotes}
+            onClose={() => setSelectedStep(null)}
+            onSkip={() => updateStep(selectedStep, "pulado")}
+            onDone={() => updateStep(selectedStep, "realizado")}
+          />
+        ) : null}
+      </AnimatePresence>
 
       <nav className="fixed inset-x-3 bottom-3 z-30 grid grid-cols-5 rounded-full border border-[#140b10]/10 bg-[#fffaf6]/95 p-2 shadow-[0_20px_70px_rgba(62,18,36,0.18)] backdrop-blur md:hidden">
         {[
@@ -610,7 +661,12 @@ function HomeView({
 
       <div className="mt-5 grid gap-4 md:grid-cols-3">
         {nextSteps.map((step, index) => (
-          <article className={classNames("rounded-[30px] border p-6", getStepTone(step.type))} key={step.id}>
+          <motion.article
+            className={classNames("rounded-[30px] border p-6", getStepTone(step.type))}
+            key={step.id}
+            {...softItemMotion}
+            transition={{ ...softItemMotion.transition, delay: index * 0.06 }}
+          >
             <p className="text-xs font-black uppercase tracking-[0.18em] text-[#ad2d63]">
               {index === 0 ? "Hoje" : index === 1 ? "Próxima etapa" : "Depois"}
             </p>
@@ -619,7 +675,7 @@ function HomeView({
             <button className="mt-6 rounded-full bg-[#140b10] px-5 py-3 text-sm font-extrabold text-white" onClick={() => onOpenStep(step)} type="button">
               Ver detalhes
             </button>
-          </article>
+          </motion.article>
         ))}
       </div>
 
@@ -670,12 +726,30 @@ function DiagnosisView({
         <div className="mt-8">
           <p className="text-sm font-black">Foto do cabelo</p>
           <label className="mt-3 flex cursor-pointer flex-col items-center justify-center rounded-[28px] border border-dashed border-[#ad2d63]/35 bg-[#fff8f2] p-5 text-center">
-            {photoPreview ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img alt="Prévia da foto do cabelo" className="max-h-80 w-full rounded-[22px] object-contain" src={photoPreview} />
-            ) : (
-              <span className="py-8 text-sm font-extrabold text-[#5b4d52]">Selecionar foto em JPG, PNG ou WEBP</span>
-            )}
+            <AnimatePresence mode="wait">
+              {photoPreview ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <motion.img
+                  alt="Prévia da foto do cabelo"
+                  animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                  className="max-h-80 w-full rounded-[22px] object-contain"
+                  exit={{ opacity: 0, scale: 0.98, filter: "blur(6px)" }}
+                  initial={{ opacity: 0, scale: 0.98, filter: "blur(8px)" }}
+                  src={photoPreview}
+                  transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                />
+              ) : (
+                <motion.span
+                  animate={{ opacity: 1, y: 0 }}
+                  className="py-8 text-sm font-extrabold text-[#5b4d52]"
+                  exit={{ opacity: 0, y: -6 }}
+                  initial={{ opacity: 0, y: 8 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  Selecionar foto em JPG, PNG ou WEBP
+                </motion.span>
+              )}
+            </AnimatePresence>
             <input accept="image/png,image/jpeg,image/jpg,image/webp" className="sr-only" onChange={onPhotoChange} type="file" />
           </label>
           {photoPreview ? (
@@ -766,7 +840,7 @@ function ChoiceGroup({
         const isSelected = selected.includes(option);
 
         return (
-          <button
+          <motion.button
             className={classNames(
               "rounded-full border px-4 py-3 text-xs font-extrabold transition",
               isSelected ? "border-[#140b10] bg-[#140b10] text-white" : "border-[#140b10]/12 bg-white text-[#3e1224] hover:border-[#ad2d63]",
@@ -775,9 +849,11 @@ function ChoiceGroup({
             onClick={() => onSelect(option)}
             type="button"
             aria-pressed={multiple ? isSelected : undefined}
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.97 }}
           >
             {option}
-          </button>
+          </motion.button>
         );
       })}
     </div>
@@ -820,12 +896,25 @@ function ScheduleView({
       </div>
 
       <div className="mt-5 space-y-5">
-        {weeks.map((group) => (
-          <section className="rounded-[34px] bg-[#fffaf6] p-5 soft-border md:p-7" key={group.week}>
+        {weeks.map((group, groupIndex) => (
+          <motion.section
+            className="rounded-[34px] bg-[#fffaf6] p-5 soft-border md:p-7"
+            key={group.week}
+            {...softItemMotion}
+            transition={{ ...softItemMotion.transition, delay: groupIndex * 0.08 }}
+          >
             <h3 className="font-editorial text-4xl font-black leading-none">Semana {group.week}</h3>
             <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {group.steps.map((step) => (
-                <article className={classNames("rounded-[26px] border p-5", getStepTone(step.type))} key={step.id}>
+              {group.steps.map((step, stepIndex) => (
+                <motion.article
+                  className={classNames("rounded-[26px] border p-5", getStepTone(step.type))}
+                  key={step.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  transition={{ delay: stepIndex * 0.035, duration: 0.36, ease: [0.16, 1, 0.3, 1] }}
+                  viewport={{ once: true }}
+                  whileHover={{ y: -3 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-xs font-black uppercase tracking-[0.16em] text-[#ad2d63]">{step.dateLabel}</p>
@@ -839,10 +928,10 @@ function ScheduleView({
                   <button className="mt-5 rounded-full bg-[#140b10] px-5 py-3 text-xs font-extrabold text-white" onClick={() => onOpenStep(step)} type="button">
                     Ver detalhes
                   </button>
-                </article>
+                </motion.article>
               ))}
             </div>
-          </section>
+          </motion.section>
         ))}
       </div>
     </section>
@@ -865,8 +954,20 @@ function TreatmentDetail({
   onSkip: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-40 grid place-items-end bg-[#140b10]/45 p-3 backdrop-blur-sm md:place-items-center">
-      <section className="max-h-[92svh] w-full max-w-2xl overflow-auto rounded-[34px] bg-[#fffaf6] p-6 soft-border premium-shadow md:p-8">
+    <motion.div
+      animate={{ opacity: 1 }}
+      className="fixed inset-0 z-40 grid place-items-end bg-[#140b10]/45 p-3 backdrop-blur-sm md:place-items-center"
+      exit={{ opacity: 0 }}
+      initial={{ opacity: 0 }}
+      transition={{ duration: 0.28 }}
+    >
+      <motion.section
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        className="max-h-[92svh] w-full max-w-2xl overflow-auto rounded-[34px] bg-[#fffaf6] p-6 soft-border premium-shadow md:p-8"
+        exit={{ opacity: 0, y: 18, scale: 0.98 }}
+        initial={{ opacity: 0, y: 28, scale: 0.98 }}
+        transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
+      >
         <button className="rounded-full border border-[#140b10]/15 px-4 py-2 text-xs font-extrabold" onClick={onClose} type="button">
           Fechar
         </button>
@@ -893,8 +994,8 @@ function TreatmentDetail({
             Pular etapa
           </button>
         </div>
-      </section>
-    </div>
+      </motion.section>
+    </motion.div>
   );
 }
 
@@ -916,8 +1017,15 @@ function HistoryView({ logs }: { logs: TreatmentLog[] }) {
         <p className="mt-6 text-sm font-bold leading-7 text-[#5b4d52]">Você ainda não marcou nenhum tratamento como realizado.</p>
       ) : (
         <div className="mt-6 space-y-3">
-          {logs.map((log) => (
-            <article className="rounded-[24px] border border-[#140b10]/10 bg-white p-5" key={log.id ?? `${log.scheduled_day}-${log.created_at}`}>
+          {logs.map((log, index) => (
+            <motion.article
+              className="rounded-[24px] border border-[#140b10]/10 bg-white p-5"
+              key={log.id ?? `${log.scheduled_day}-${log.created_at}`}
+              initial={{ opacity: 0, y: 14 }}
+              transition={{ delay: index * 0.05, duration: 0.36, ease: [0.16, 1, 0.3, 1] }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <p className="font-editorial text-3xl font-black leading-none">{log.treatment_type}</p>
                 <span className="w-fit rounded-full bg-[#f6d4de] px-3 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-[#3e1224]">
@@ -926,7 +1034,7 @@ function HistoryView({ logs }: { logs: TreatmentLog[] }) {
               </div>
               <p className="mt-3 text-sm font-bold text-[#5b4d52]">Dia {log.scheduled_day}</p>
               {log.notes ? <p className="mt-3 text-sm font-semibold leading-6 text-[#5b4d52]">{log.notes}</p> : null}
-            </article>
+            </motion.article>
           ))}
         </div>
       )}

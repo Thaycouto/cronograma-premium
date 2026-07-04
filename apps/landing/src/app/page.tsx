@@ -1,4 +1,5 @@
 import { getSupportWhatsAppUrl } from "@/app/support-whatsapp";
+import { AnimatedOpening, ReferenceReveal, RevealBlock } from "@/app/landing-motion";
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://couto-hair-app.netlify.app";
 const kiwifyCheckoutUrl = process.env.NEXT_PUBLIC_KIWIFY_CHECKOUT_URL || "#acesso";
@@ -112,10 +113,12 @@ export default function LandingPage() {
         </a>
       </header>
 
+      <AnimatedOpening />
+
       <section className="relative overflow-hidden px-5 pb-14 pt-28 md:px-10 md:pb-20 md:pt-36">
         <div className="absolute inset-x-0 top-0 -z-10 h-[68%] bg-[radial-gradient(circle_at_74%_18%,rgba(225,74,134,0.14),transparent_28rem)]" />
-        <div className="mx-auto grid min-h-[78svh] max-w-6xl gap-12 md:grid-cols-[1.02fr_0.72fr] md:items-center">
-          <div className="animate-[fadeUp_1.8s_ease_forwards] opacity-0">
+        <div className="mx-auto min-h-[70svh] max-w-6xl">
+          <RevealBlock className="max-w-4xl">
             <h1 className="font-editorial max-w-3xl text-[3.3rem] font-black leading-[0.9] tracking-[-0.045em] md:text-[6rem]">
               Está pronta para a melhor fase do seu cabelo?
             </h1>
@@ -142,42 +145,21 @@ export default function LandingPage() {
                 Já comprei
               </a>
             </div>
-          </div>
+          </RevealBlock>
 
-          <div className="relative mx-auto w-full max-w-sm animate-[fadeUp_2.4s_ease_0.25s_forwards] opacity-0 md:max-w-none">
-            <div className="premium-shadow rounded-[36px] bg-[#fffaf6] p-3">
-              <div className="rounded-[28px] bg-[linear-gradient(145deg,#3e1224,#140b10)] p-5 text-white">
-                <div className="rounded-[26px] bg-[#fff8f2] p-5 text-[#140b10]">
-                  <span className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#ad2d63]">Prévia</span>
-                  <h2 className="font-editorial mt-3 text-4xl font-black leading-none">Seu plano começa aqui</h2>
-                  <p className="mt-4 text-sm font-semibold leading-6 text-[#5d5055]">
-                    O calendário completo fica dentro do acesso premium.
-                  </p>
-                </div>
-                <div className="mt-5 divide-y divide-white/12 rounded-[24px] border border-white/12">
-                  {["Diagnóstico", "Foto", "Cronograma"].map((item, index) => (
-                    <p className="flex items-center justify-between px-4 py-4 text-sm font-extrabold" key={item}>
-                      <span>{item}</span>
-                      <span className={`h-2 rounded-full ${index === 2 ? "w-10 bg-white/22" : "w-16 bg-[#e14a86]"}`} />
-                    </p>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
       <section className="px-5 pb-20 pt-8 md:px-10 md:pb-24 md:pt-12">
         <div className="mx-auto max-w-6xl">
-          <div className="max-w-4xl">
+          <RevealBlock className="max-w-4xl">
             <h2 className="font-editorial text-5xl font-black leading-[0.92] tracking-[-0.035em] md:text-7xl">
               O resultado que inspirou esse cronograma.
             </h2>
             <p className="mt-6 max-w-xl text-base font-bold leading-7 text-[#5b4d52]">
               Antes de montar o seu, veja o que mudou quando o cuidado passou a ter direção.
             </p>
-          </div>
+          </RevealBlock>
 
           <div className="mt-12 space-y-10">
             {resultPairs.map((item, index) => (
@@ -189,8 +171,12 @@ export default function LandingPage() {
                 }`}
                 key={item.before}
               >
-                <ResultImage label="Antes" src={item.before} featured={item.featured} />
-                <ResultImage label="Depois" src={item.after} featured={item.featured} lift={index === 0} />
+                <ReferenceReveal delay={0.12 + index * 0.08}>
+                  <ResultImage label="Antes" src={item.before} featured={item.featured} />
+                </ReferenceReveal>
+                <ReferenceReveal delay={0.28 + index * 0.08} lift={index === 0}>
+                  <ResultImage label="Depois" src={item.after} featured={item.featured} lift={index === 0} />
+                </ReferenceReveal>
               </article>
             ))}
           </div>
@@ -198,7 +184,7 @@ export default function LandingPage() {
       </section>
 
       <section className="bg-[#140b10] px-5 py-20 text-white md:px-10">
-        <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-[0.9fr_1fr] md:items-start">
+        <RevealBlock className="mx-auto grid max-w-6xl gap-10 md:grid-cols-[0.9fr_1fr] md:items-start">
           <div>
             <h2 className="font-editorial text-5xl font-black leading-[0.95] tracking-[-0.035em] md:text-7xl">
               O cronograma completo não é uma lista pronta.
@@ -218,11 +204,11 @@ export default function LandingPage() {
               </p>
             ))}
           </div>
-        </div>
+        </RevealBlock>
       </section>
 
       <section className="px-5 py-20 md:px-10">
-        <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-[0.8fr_1fr] md:items-start">
+        <RevealBlock className="mx-auto grid max-w-6xl gap-10 md:grid-cols-[0.8fr_1fr] md:items-start">
           <div>
             <h2 className="font-editorial text-5xl font-black leading-[0.95] tracking-[-0.035em] md:text-7xl">
               Uma prévia do que você vai receber.
@@ -246,11 +232,11 @@ export default function LandingPage() {
               ))}
             </div>
           </div>
-        </div>
+        </RevealBlock>
       </section>
 
       <section className="px-5 pb-20 md:px-10">
-        <div className="mx-auto max-w-6xl">
+        <RevealBlock className="mx-auto max-w-6xl">
           <div className="max-w-3xl">
             <h2 className="font-editorial text-5xl font-black leading-[0.95] tracking-[-0.035em] md:text-7xl">
               Dúvidas comuns antes de começar.
@@ -265,11 +251,11 @@ export default function LandingPage() {
               </article>
             ))}
           </div>
-        </div>
+        </RevealBlock>
       </section>
 
       <section id="acesso" className="px-5 pb-24 md:px-10">
-        <div className="mx-auto max-w-4xl text-center">
+        <RevealBlock className="mx-auto max-w-4xl text-center">
           <h2 className="font-editorial text-5xl font-black leading-[0.95] tracking-[-0.035em] md:text-7xl">
             Quero meu cronograma completo.
           </h2>
@@ -290,7 +276,7 @@ export default function LandingPage() {
               Já comprei
             </a>
           </div>
-        </div>
+        </RevealBlock>
       </section>
 
       <footer className="border-t border-[#140b10]/10 px-5 py-10 md:px-10">
