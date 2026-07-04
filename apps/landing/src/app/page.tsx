@@ -1,5 +1,5 @@
 import { getSupportWhatsAppUrl } from "@/app/support-whatsapp";
-import { AnimatedOpening, ReferenceReveal, RevealBlock } from "@/app/landing-motion";
+import { AnimatedOpening, RevealBlock, StickyReferenceGallery } from "@/app/landing-motion";
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://couto-hair-app.netlify.app";
 const kiwifyCheckoutUrl = process.env.NEXT_PUBLIC_KIWIFY_CHECKOUT_URL || "#acesso";
@@ -150,38 +150,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="px-5 pb-20 pt-8 md:px-10 md:pb-24 md:pt-12">
-        <div className="mx-auto max-w-6xl">
-          <RevealBlock className="max-w-4xl">
-            <h2 className="font-editorial text-5xl font-black leading-[0.92] tracking-[-0.035em] md:text-7xl">
-              O resultado que inspirou esse cronograma.
-            </h2>
-            <p className="mt-6 max-w-xl text-base font-bold leading-7 text-[#5b4d52]">
-              Antes de montar o seu, veja o que mudou quando o cuidado passou a ter direção.
-            </p>
-          </RevealBlock>
-
-          <div className="mt-12 space-y-10">
-            {resultPairs.map((item, index) => (
-              <article
-                className={`grid gap-4 ${
-                  item.featured
-                    ? "md:grid-cols-[0.95fr_1.08fr] md:items-end"
-                    : "md:ml-auto md:max-w-4xl md:grid-cols-2 md:items-start"
-                }`}
-                key={item.before}
-              >
-                <ReferenceReveal delay={0.12 + index * 0.08}>
-                  <ResultImage label="Antes" src={item.before} featured={item.featured} />
-                </ReferenceReveal>
-                <ReferenceReveal delay={0.28 + index * 0.08} lift={index === 0}>
-                  <ResultImage label="Depois" src={item.after} featured={item.featured} lift={index === 0} />
-                </ReferenceReveal>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
+      <StickyReferenceGallery items={resultPairs} />
 
       <section className="bg-[#140b10] px-5 py-20 text-white md:px-10">
         <RevealBlock className="mx-auto grid max-w-6xl gap-10 md:grid-cols-[0.9fr_1fr] md:items-start">
@@ -296,33 +265,6 @@ export default function LandingPage() {
         </div>
       </footer>
     </main>
-  );
-}
-
-function ResultImage({
-  label,
-  src,
-  featured,
-  lift,
-}: {
-  label: string;
-  src: string;
-  featured?: boolean;
-  lift?: boolean;
-}) {
-  const height = featured ? "h-[470px] md:h-[680px]" : "h-[440px] md:h-[540px]";
-
-  return (
-    <figure
-      className={`relative overflow-hidden rounded-[30px] bg-[#f3e7de] soft-border premium-shadow ${height} ${
-        lift ? "md:-mb-8" : ""
-      }`}
-    >
-      <img alt={`${label} do cronograma`} className="h-full w-full object-contain object-center" src={src} />
-      <figcaption className="absolute left-4 top-4 rounded-full bg-[#140b10]/68 px-4 py-2 text-[0.68rem] font-black uppercase tracking-[0.16em] text-white backdrop-blur">
-        {label}
-      </figcaption>
-    </figure>
   );
 }
 
