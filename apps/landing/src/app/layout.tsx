@@ -20,6 +20,11 @@ export const metadata: Metadata = {
   title: "Couto Hair Program | Cronograma Capilar Personalizado",
   description:
     "Monte um cronograma capilar personalizado para reduzir frizz, ressecamento, quebra e organizar os cuidados do seu cabelo com mais direção.",
+  icons: {
+    icon: [{ url: "/assets/logo-couto-hair.jpeg", type: "image/jpeg" }],
+    apple: [{ url: "/assets/logo-couto-hair.jpeg", type: "image/jpeg" }],
+    shortcut: [{ url: "/assets/logo-couto-hair.jpeg", type: "image/jpeg" }],
+  },
   openGraph: {
     title: "Couto Hair Program | Cronograma Capilar Personalizado",
     description:

@@ -19,6 +19,11 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: "Couto Hair Program",
   description: "Cronograma capilar premium com diagnóstico, rotina personalizada e acompanhamento.",
+  icons: {
+    icon: [{ url: "/assets/logo-couto-hair.jpeg", type: "image/jpeg" }],
+    apple: [{ url: "/assets/logo-couto-hair.jpeg", type: "image/jpeg" }],
+    shortcut: [{ url: "/assets/logo-couto-hair.jpeg", type: "image/jpeg" }],
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

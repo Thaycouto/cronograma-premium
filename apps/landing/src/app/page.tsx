@@ -109,7 +109,7 @@ export default function LandingPage() {
           className="rounded-full bg-[#140b10] px-5 py-3 text-xs font-extrabold text-white transition hover:-translate-y-0.5"
           href={appUrl}
         >
-          Já comprei
+          Login
         </a>
       </header>
 
@@ -124,7 +124,7 @@ export default function LandingPage() {
             </h1>
             <div className="mt-8 max-w-xl space-y-5 text-lg font-semibold leading-8 text-[#3b3035]">
               <p>
-                Redução de frizz, cabelo deixando de ser quebradiço ou ressecado, brilho invejável, e muito mais.
+                Redução de frizz, cabelo deixando de ser quebradiço ou ressecado, brilho, e muito mais.
               </p>
               <p>
                 Você vai ter tudo isso e muito mais nesse cronograma capilar montado excepcionalmente pra você, pela
@@ -142,7 +142,7 @@ export default function LandingPage() {
                 className="inline-flex justify-center rounded-full border border-[#140b10]/15 px-7 py-4 text-sm font-extrabold text-[#140b10] transition hover:-translate-y-1 hover:border-[#ad2d63]/40"
                 href={appUrl}
               >
-                Já comprei
+                Login
               </a>
             </div>
           </RevealBlock>
@@ -242,7 +242,7 @@ export default function LandingPage() {
               className="inline-flex justify-center rounded-full border border-[#140b10]/15 px-8 py-4 text-sm font-extrabold text-[#140b10] transition hover:-translate-y-1 hover:border-[#ad2d63]/40"
               href={appUrl}
             >
-              Já comprei
+              Login
             </a>
           </div>
         </RevealBlock>
