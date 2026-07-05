@@ -558,14 +558,14 @@ export function DashboardApp({ email }: DashboardAppProps) {
       <nav className="fixed inset-x-3 bottom-3 z-30 grid grid-cols-5 rounded-full border border-[#140b10]/10 bg-[#fffaf6]/95 p-2 shadow-[0_20px_70px_rgba(62,18,36,0.18)] backdrop-blur md:hidden">
         {[
           ["inicio", "Início"],
-          ["diagnostico", "Diagnóstico"],
+          ["diagnostico", "Diag."],
           ["cronograma", "Plano"],
-          ["historico", "Histórico"],
+          ["historico", "Hist."],
           ["perfil", "Perfil"],
         ].map(([value, label]) => (
           <button
             className={classNames(
-              "rounded-full px-2 py-3 text-[11px] font-black transition",
+              "min-w-0 truncate whitespace-nowrap rounded-full px-1 py-3 text-center text-[10px] font-black leading-none transition min-[390px]:px-2 min-[390px]:text-[11px]",
               activeTab === value ? "bg-[#140b10] text-white" : "text-[#5b4d52]",
             )}
             key={value}
