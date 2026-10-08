@@ -41,7 +41,10 @@ export async function POST(request: Request) {
 
   const supabase = createSupabaseAdmin();
   const email = normalizeEmail(event.email);
-  const eventId = event.eventId || event.orderId || `${event.eventType || "kiwify"}:${email}:${Date.now()}`;
+  const eventId =
+    event.eventId ||
+    (event.orderId && `${event.orderId}:${event.status || event.eventType || "update"}`) ||
+    `${event.eventType || "kiwify"}:${email}:${Date.now()}`;
 
   const { error: eventError } = await supabase.from("kiwify_events").upsert(
     {
@@ -58,30 +61,44 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Could not record event" }, { status: 500 });
   }
 
-  if (event.status && CANCELED_STATUS.has(event.status)) {
-    const { error } = await supabase
-      .from("access_grants")
-      .update({
-        status: "inactive",
-        updated_at: new Date().toISOString(),
-      })
-      .eq("email", email);
+  const { data:existingGrant, error: lookupError } = await supabase
+    .from("access_grants")
+    .select("id,source,order_id")
+    .eq("email", email)
+    .maybeSingle();
 
-    if (error) {
-      return NextResponse.json({ error: "Could not revoke access" }, { status: 500 });
-    }
-
-    return NextResponse.json({ received: true, access: "revoked" });
+  if (lookupError) {
+    return NextResponse.json({ error: "Could not check access" }, { status: 500 });
   }
 
-  if (event.eventType && CANCELED_EVENTS.has(event.eventType)) {
+  if (existingGrant?.source === "manual_test") {
+    return NextResponse.json({ received: true, access: "manual_override" });
+  }
+
+  const isCanceled = Boolean(
+    (event.status && CANCELED_STATUS.has(event.status)) ||
+      (event.eventType && CANCELED_EVENTS.has(event.eventType)),
+  );
+
+  if (isCanceled) {
+    if (
+      !event.orderId ||
+      !existingGrant ||
+      existingGrant.source !== "kiwify" ||
+      existingGrant.order_id !== event.orderId
+    ) {
+      return NextResponse.json({ received: true, access: "ignored" });
+    }
+
     const { error } = await supabase
       .from("access_grants")
       .update({
         status: "inactive",
         updated_at: new Date().toISOString(),
       })
-      .eq("email", email);
+      .eq("id", existingGrant.id)
+      .eq("source", "kiwify")
+      .eq("order_id", event.orderId);
 
     if (error) {
       return NextResponse.json({ error: "Could not revoke access" }, { status: 500 });
@@ -124,7 +141,7 @@ function readKiwifyEvent(payload: Record<string, unknown>) {
   const customer = readObject(payload.customer) || readObject(payload.Customer) || readObject(payload.buyer);
   const order = readObject(payload.order) || readObject(payload.Order) || readObject(payload.sale);
   const product = readObject(payload.product) || readObject(payload.Product);
-  const status = String(payload.status || payload.order_status || order?.status || payload.payment_status || "").toLowerCase();
+  const status = String(payload.status || payload.order_status || order?.status || payload.payment_status || "").trim().toLowerCase();
 
   return {
     eventId: readString(payload.event_id) || readString(payload.id) || readString(payload.webhook_event_id),
