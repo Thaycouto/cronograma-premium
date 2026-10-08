@@ -35,13 +35,28 @@ export async function POST(request: Request) {
       password,
     });
 
-    if (signInError || !signInData.user) {
+    if (signInError) {
       console.error("auth/login signIn error", {
         email,
         message: signInError?.message,
         status: signInError?.status,
+        code: signInError?.code,
       });
-      return jsonError("E-mail ou senha incorretos.", 401);
+
+      if (signInError.code === "invalid_credentials" || signInError.message.toLowerCase().includes("invalid login credentials")) {
+        return jsonError("E-mail ou senha incorretos.", 401);
+      }
+
+      if (signInError.code === "email_not_confirmed") {
+        return jsonError("Seu e-mail ainda não foi confirmado.", 403);
+      }
+
+      return jsonError("O serviço de acesso está indisponível no momento. Tente novamente em instantes.", 503);
+    }
+
+    if (!signInData.user) {
+      console.error("auth/login signIn returned no user", { email });
+      return jsonError("O serviço de acesso está indisponível no momento. Tente novamente em instantes.", 503);
     }
 
     const user = signInData.user;

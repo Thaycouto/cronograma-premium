@@ -33,45 +33,49 @@ export function LoginForm({ initialMessage }: LoginFormProps) {
     setMessage("");
     console.log("Login submit iniciado", { email: normalizedEmail });
 
-    const response = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: normalizedEmail,
-        password,
-      }),
-    });
-
-    const result = (await response.json().catch(() => null)) as {
-      ok?: boolean;
-      redirectTo?: string;
-      error?: string;
-      code?: string;
-      details?: Record<string, unknown>;
-    } | null;
-
-    if (!response.ok || !result?.ok) {
-      console.error("Login error", {
-        email: normalizedEmail,
-        status: response.status,
-        error: result?.error,
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: normalizedEmail,
+          password,
+        }),
       });
 
-      setMessage(result?.error || "Não conseguimos concluir agora. Tente novamente em alguns instantes.");
+      const result = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        redirectTo?: string;
+        error?: string;
+      } | null;
+
+      if (!response.ok || !result?.ok) {
+        console.error("Login error", {
+          email: normalizedEmail,
+          status: response.status,
+          error: result?.error,
+        });
+
+        setMessage(result?.error || "Não conseguimos concluir agora. Tente novamente em alguns instantes.");
+        return;
+      }
+
+      const redirectTo = result.redirectTo || "/dashboard";
+      console.log("Login redirect final", {
+        email: normalizedEmail,
+        redirectTo,
+      });
+
+      router.replace(redirectTo);
+      router.refresh();
+    } catch (error) {
+      console.error("Login request failed", error);
+      setMessage("Não foi possível conectar agora. Verifique sua conexão e tente novamente.");
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    const redirectTo = result.redirectTo || "/dashboard";
-    console.log("Login redirect final", {
-      email: normalizedEmail,
-      redirectTo,
-    });
-
-    router.replace(redirectTo);
-    router.refresh();
   }
 
   return (
