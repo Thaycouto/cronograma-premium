@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { RecoveryRedirect } from "@/app/recovery-redirect";
 
 const landingUrl = process.env.NEXT_PUBLIC_LANDING_URL || "https://couto-hair-program.netlify.app";
 
 export default function WebappHomePage() {
   return (
     <main className="grid min-h-svh place-items-center px-5 py-16">
+      <RecoveryRedirect />
       <section className="premium-shadow max-w-xl rounded-[34px] bg-[#fffaf6] p-8 text-center soft-border">
         <p className="text-xs font-black uppercase tracking-[0.22em] text-[#ad2d63]">Couto Hair Program</p>
         <h1 className="font-editorial mt-5 text-5xl font-black leading-none tracking-[-0.035em] md:text-6xl">

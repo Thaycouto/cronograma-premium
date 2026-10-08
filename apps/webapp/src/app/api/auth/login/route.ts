@@ -68,7 +68,7 @@ export async function POST(request: Request) {
     });
 
     const admin = createSupabaseAdmin();
-    const { grant, error } = await findActiveAccessGrant(admin, userEmail);
+    const { grant, grants, error } = await findActiveAccessGrant(admin, userEmail);
 
     console.log("auth/login access_grants resultado", {
       email: userEmail,
@@ -88,6 +88,9 @@ export async function POST(request: Request) {
     }
 
     if (!grant) {
+      if (grants.some((item) => item.normalizedEmail === userEmail)) {
+        return jsonError("Seu acesso está inativo. Fale com o suporte para verificar sua compra.", 403);
+      }
       return jsonError("Seu acesso ainda não foi liberado.", 403);
     }
 

@@ -142,6 +142,9 @@ export function LoginForm({ initialMessage }: LoginFormProps) {
       <Link className="mt-5 inline-flex text-sm font-extrabold text-[#ad2d63]" href="/criar-senha">
         Criar senha com o e-mail da compra
       </Link>
+      <Link className="mt-3 block text-sm font-extrabold text-[#ad2d63]" href="/esqueci-senha">
+        Esqueci minha senha
+      </Link>
     </form>
   );
 }

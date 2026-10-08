@@ -30,7 +30,7 @@ export async function POST(request: Request) {
 
   try {
     const admin = createSupabaseAdmin();
-    const { grant, error } = await findActiveAccessGrant(admin, email);
+    const { grant, grants, error } = await findActiveAccessGrant(admin, email);
 
     if (error) {
       console.error("auth/create-password access lookup failed", {
@@ -42,6 +42,9 @@ export async function POST(request: Request) {
     }
 
     if (!grant) {
+      if (grants.some((item) => item.normalizedEmail === email)) {
+        return jsonError("Seu acesso está inativo. Fale com o suporte para verificar sua compra.", 403);
+      }
       return jsonError("Não encontramos uma compra aprovada para este e-mail.", 403);
     }
 
