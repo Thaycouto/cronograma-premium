@@ -1,5 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
+import { findActiveAccessGrant } from "@/lib/access-grants";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
 
 export const premiumSessionCookieName = "chp_session";
 
@@ -84,8 +86,20 @@ export function verifyPremiumSessionToken(token?: string) {
 export async function getPremiumSession() {
   const cookieStore = await cookies();
   const token = cookieStore.get(premiumSessionCookieName)?.value;
+  const session = verifyPremiumSessionToken(token);
 
-  return verifyPremiumSessionToken(token);
+  if (!session) {
+    return null;
+  }
+
+  const { grant, error } = await findActiveAccessGrant(createSupabaseAdmin(), session.email);
+
+  if (error) {
+    console.error("premium/session access lookup failed", { code: error.code, message: error.message });
+    throw new Error("Premium access lookup failed");
+  }
+
+  return grant && (!grant.normalizedUserId || grant.normalizedUserId === session.user_id) ? session : null;
 }
 
 export function getPremiumSessionCookieOptions() {
